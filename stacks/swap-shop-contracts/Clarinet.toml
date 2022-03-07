@@ -1,0 +1,28 @@
+[project]
+name = "swap-shop-contracts"
+authors = []
+description = ""
+telemetry = false
+requirements = []
+analysis = ["check_checker"]
+costs_version = 2
+
+[contracts.ft-trait]
+path = "contracts/ft-trait.clar"
+depends_on = []
+
+[contracts.nft-trait]
+path = "contracts/nft-trait.clar"
+depends_on = []
+
+[contracts.private-sale-v1]
+path = "contracts/private-sale-v1.clar"
+depends_on = ["nft-trait"]
+
+[contracts.sip009-nft]
+path = "contracts/sip009-nft.clar"
+depends_on = ["nft-trait"]
+
+[contracts.swap-shop-v1]
+path = "contracts/swap-shop-v1.clar"
+depends_on = ["nft-trait", "ft-trait"]
