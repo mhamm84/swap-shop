@@ -11,7 +11,7 @@ const contractPrincipal = (deployer: Account) => `${deployer.address}.${contract
 
 
 Clarinet.test({
-    name: "success-admin-add-nft-asset-to-whitelist",
+    name: "admin-add-nft-asset-to-whitelist",
     async fn(chain: Chain, accounts: Map<string, Account>) {
         // Get the deployer account.
         let deployer = accounts.get('deployer')!;
@@ -24,7 +24,7 @@ Clarinet.test({
 });
 
 Clarinet.test({
-    name: "fail-not-deployer-admin-add-nft-asset-to-whitelist",
+    name: "admin-add-nft-asset-to-whitelist-not-deployer",
     async fn(chain: Chain, accounts: Map<string, Account>) {
         let deployer = accounts.get('deployer')!
         let wallet1 = accounts.get('wallet_1')!
@@ -37,29 +37,29 @@ Clarinet.test({
 });
 
 Clarinet.test({
-    name: "success-admin-check-nft-asset-whitelisted",
+    name: "is-whitelisted",
     async fn(chain: Chain, accounts: Map<string, Account>) {
         let deployer = accounts.get('deployer')!;
         let privateSale = new PrivateSale(chain, deployer)
         privateSale.adminAddNftAssetToWhitelist(deployer, defaultNftAssetContract)
-        let call = await privateSale.adminCheckNftAssetWhitelisted(deployer, defaultNftAssetContract);
+        let call = await privateSale.isWhitelisted(deployer, defaultNftAssetContract);
         call.result.expectBool(true);
     },
 });
 
 Clarinet.test({
-    name: "fail-admin-check-nft-asset-whitelisted-no-entry",
+    name: "is-whitelisted-no-entry",
     async fn(chain: Chain, accounts: Map<string, Account>) {
         let deployer = accounts.get('deployer')!;
         let privateSale = new PrivateSale(chain, deployer)
         privateSale.adminAddNftAssetToWhitelist(deployer, 'does-not-exist') 
-        let call = await privateSale.adminCheckNftAssetWhitelisted(deployer, defaultNftAssetContract);
+        let call = await privateSale.isWhitelisted(deployer, defaultNftAssetContract);
         call.result.expectBool(false);
     },
 });
 
 Clarinet.test({
-    name: "success-admin-update-nft-asset-in-whitelist-existing",
+    name: "admin-update-nft-asset-in-whitelist-existing",
     async fn(chain: Chain, accounts: Map<string, Account>) {
         let deployer = accounts.get('deployer')!;
         let privateSale = new PrivateSale(chain, deployer)
@@ -73,7 +73,7 @@ Clarinet.test({
 })
 
 Clarinet.test({
-    name: "success-admin-update-nft-asset-in-whitelist-new",
+    name: "admin-update-nft-asset-in-whitelist-new",
     async fn(chain: Chain, accounts: Map<string, Account>) {
         let deployer = accounts.get('deployer')!;
         let privateSale = new PrivateSale(chain, deployer)
@@ -84,7 +84,7 @@ Clarinet.test({
 })
 
 Clarinet.test({
-    name: "fail-admin-update-nft-asset-in-whitelist-auth",
+    name: "admin-update-nft-asset-in-whitelist-auth",
     async fn(chain: Chain, accounts: Map<string,Account>) {
         let deployer = accounts.get("deployer")!
         let wallet1 = accounts.get("wallet_1")!
@@ -99,7 +99,7 @@ Clarinet.test({
 })
 
 Clarinet.test({
-    name: "success-admin-set-contract-owner",
+    name: "admin-set-contract-owner",
     async fn(chain: Chain, accounts: Map<string, Account>) {
         let deployer = accounts.get('deployer')!;
         let newOwner = accounts.get("wallet_1")!
@@ -111,7 +111,7 @@ Clarinet.test({
 })
 
 Clarinet.test({
-    name: "fail-admin-set-contract-owner-not-current-owner",
+    name: "admin-set-contract-owner-not-current-owner",
     async fn(chain: Chain, accounts: Map<string, Account>) {
         let deployer = accounts.get('deployer')!;
         let newOwner = accounts.get("wallet_1")!

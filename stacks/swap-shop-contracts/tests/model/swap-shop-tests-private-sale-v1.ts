@@ -29,8 +29,8 @@ class PrivateSale {
     return receipt;
   }
 
-  adminCheckNftAssetWhitelisted(user: Account, nftAsset: string) {
-    return this.chain.callReadOnlyFn(contractName, "admin-check-nft-asset-whitelisted", [
+  isWhitelisted(user: Account, nftAsset: string) {
+    return this.chain.callReadOnlyFn(contractName, "is-whitelisted", [
       types.principal(Utils.qualifiedName(nftAsset))
     ], user.address
     );

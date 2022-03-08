@@ -22,7 +22,7 @@
 ;; The listing has an expiry on it which is the block height of the stacks blockchain in  the future
 (define-public (list-nft (nft-asset <nft-trait>) (listing-details {nft-id: uint, buyer: principal, price: uint, listing-expiry: uint}))
     (begin
-        (asserts! (is-in-whitelist nft-asset) (err ERR_NOT_WHITELISTED))
+        (asserts! (is-whitelisted nft-asset) (err ERR_NOT_WHITELISTED))
         (asserts! (> (get nft-id listing-details) u0) (err ERR_NFT_ID_INVALID))
         (asserts! (> (get price listing-details) u0) (err ERR_PRICE_TOO_LOW))
         (asserts! (> (get listing-expiry listing-details) block-height) (err ERR_EXPIRY_IN_PAST))
@@ -80,10 +80,6 @@
     )
 )
 
-(define-read-only (admin-check-nft-asset-whitelisted (nft-asset <nft-trait>))
-    (default-to false (map-get? whitelist (contract-of nft-asset)))
-)
-
 (define-public (admin-update-nft-asset-in-whitelist (nft-asset <nft-trait>) (flag bool)) 
     (begin  
         (asserts! (is-eq tx-sender (var-get contract-owner)) ERR_UNAUTHORIZED)
@@ -101,7 +97,7 @@
 
 ;; R E A D  O N L Y
 
-(define-read-only (is-in-whitelist (nft-asset <nft-trait>))
+(define-read-only (is-whitelisted (nft-asset <nft-trait>))
     (default-to false (map-get? whitelist (contract-of nft-asset)))
 )
 
