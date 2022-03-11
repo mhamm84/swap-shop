@@ -47,7 +47,11 @@
                     }
                 )
                 (var-set next-listing-id listing-id)
-
+                (print {
+                    type:   "list-nft",
+                    action: "list",
+                    data: { listing: (map-get? listings listing-id) }
+                })
                 (ok listing-id)
         )
     )

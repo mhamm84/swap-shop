@@ -9,7 +9,26 @@ import * as Utils from './swap-shop-tests-utils.ts';
 
 const contractName = 'private-sale-v1'
 
-class PrivateSale {
+// (define-public (list-nft (nft-asset <nft-trait>) (listing-details {nft-id: uint, buyer: principal, price: uint, listing-expiry: uint}))
+// (contract-call? .private-sale-v1 list-nft 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sip009-nft {buyer: tx-sender, listing-expiry: u5, nft-id: u1, price: u10000000})
+
+export interface Listing {
+  nftId: number,
+  buyer: string,
+  price: number,
+  listingExpiry: number
+}
+
+export const createListing = (listing: Listing) =>
+  types.tuple({
+    'buyer': types.principal(listing.buyer),
+    'listing-expiry': types.uint(listing.listingExpiry),
+    'nft-id': types.uint(listing.nftId),
+    'price': types.uint(listing.price),
+  });
+
+
+export class PrivateSale {
 
   chain: Chain
   deployer: Account
@@ -59,5 +78,3 @@ class PrivateSale {
   }
   
 }
-
-export { PrivateSale };
