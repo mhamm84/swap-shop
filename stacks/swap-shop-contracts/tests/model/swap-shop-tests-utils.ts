@@ -24,16 +24,16 @@ export interface NftMinter {
     chain: Chain,
     deployer: Account,
     recipient: Account,
-    nftAssetContract: string,
+    nftAsset: string,
 }
 
 export const mintNft = (minter: NftMinter) => {
     const block = minter.chain.mineBlock([
-        Tx.contractCall(minter.nftAssetContract, 'mint', [types.principal(minter.recipient.address)], minter.deployer.address),
+        Tx.contractCall(minter.nftAsset, 'mint', [types.principal(minter.recipient.address)], minter.deployer.address),
     ]);
     block.receipts[0].result.expectOk();
     const nftMintEvent = block.receipts[0].events[0].nft_mint_event;
-    const [nftAssetContractPrincipal, nftAssetId] = nftMintEvent.asset_identifier.split('::');
-
-    return { nftAssetContract: nftAssetContractPrincipal, nftAssetId, tokenId: nftMintEvent.value.substr(1), block };
+    const [nftAsset, nftAssetId] = nftMintEvent.asset_identifier.split('::');
+    const mintDetails = { nftAsset: nftAsset, nftAssetId, tokenId: nftMintEvent.value.substr(1), block }
+    return mintDetails
 }

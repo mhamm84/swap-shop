@@ -48,7 +48,7 @@
                 )
                 (var-set next-listing-id listing-id)
                 (print {
-                    type:   "list-nft",
+                    type:   "nft-private-sale",
                     action: "list",
                     data: { listing: (map-get? listings listing-id) }
                 })
@@ -61,9 +61,9 @@
 (define-public (unlist (listing-id uint))
     (let 
         (
-            (listing (unwrap-panic (get-listing listing-id)))
+            (listing (unwrap! (get-listing listing-id) (err ERR_NO_LISTING) ))
         )
-        (asserts! (is-eq (get owner listing) tx-sender) ERR_TX_SENDER_NOT_OWNER)
+        (asserts! (is-eq (get owner listing) tx-sender) (err ERR_TX_SENDER_NOT_OWNER))
         (map-delete listings listing-id)
 
         (print {
@@ -79,21 +79,21 @@
 
 (define-public (admin-add-nft-asset-to-whitelist (nft-asset <nft-trait>)) 
     (begin  
-        (asserts! (is-eq tx-sender (var-get contract-owner)) ERR_UNAUTHORIZED)
+        (asserts! (is-eq tx-sender (var-get contract-owner)) (err ERR_UNAUTHORIZED))
         (ok (map-insert whitelist (contract-of nft-asset) true))
     )
 )
 
 (define-public (admin-update-nft-asset-in-whitelist (nft-asset <nft-trait>) (flag bool)) 
     (begin  
-        (asserts! (is-eq tx-sender (var-get contract-owner)) ERR_UNAUTHORIZED)
+        (asserts! (is-eq tx-sender (var-get contract-owner)) (err ERR_UNAUTHORIZED))
         (ok (map-set whitelist (contract-of nft-asset) flag))
     )
 )
 
 (define-public (admin-set-contract-owner (new-owner principal))
     (begin 
-        (asserts! (is-eq tx-sender (var-get contract-owner)) ERR_UNAUTHORIZED)
+        (asserts! (is-eq tx-sender (var-get contract-owner)) (err ERR_UNAUTHORIZED))
         (ok (var-set contract-owner new-owner))
     )
 )
@@ -105,17 +105,14 @@
     (default-to false (map-get? whitelist (contract-of nft-asset)))
 )
 
+;; (define-read-only (get-listing (listing-id uint))
+;;     (map-get? listings listing-id)
+;; )
+
 (define-read-only (get-listing (listing-id uint))
-    (begin  
-        (asserts! (> listing-id u0) (err ERR_INVALID_LISTING_ID))
-         (let 
-            (
-                (listing  (unwrap! (map-get? listings listing-id) (err ERR_NO_LISTING)))
-            )
-            (ok listing)
-         )
-    )   
+    (ok (unwrap! (map-get? listings listing-id) (err ERR_NO_LISTING)))
 )
+
 
 ;; P R I V A T E
 
@@ -150,16 +147,15 @@
 
 ;; E R R O R S
 
-(define-constant ERR_NFT_GET_OWNER (err u100))
-(define-constant ERR_NFT_ID_INVALID (err u101))
-(define-constant ERR_TX_SENDER_NOT_OWNER (err u102))
-(define-constant ERR_NFT_OWNER_NOT_FOUND (err u103))
-(define-constant ERR_UNAUTHORIZED (err u104))
-(define-constant ERR_NOT_WHITELISTED (err u105))
-(define-constant ERR_PRICE_TOO_LOW (err u106))
-(define-constant ERR_EXPIRY_IN_PAST (err u107))
-(define-constant ERR_NO_LISTING (err u108))
-(define-constant ERR_INVALID_LISTING_ID (err u109))
+(define-constant ERR_NFT_GET_OWNER u100)
+(define-constant ERR_NFT_ID_INVALID u101)
+(define-constant ERR_TX_SENDER_NOT_OWNER u102)
+(define-constant ERR_NFT_OWNER_NOT_FOUND u103)
+(define-constant ERR_UNAUTHORIZED u104)
+(define-constant ERR_NOT_WHITELISTED u105)
+(define-constant ERR_PRICE_TOO_LOW u106)
+(define-constant ERR_EXPIRY_IN_PAST u107)
+(define-constant ERR_NO_LISTING u108)
 
 ;; W H I T E  L I S T
 

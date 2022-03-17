@@ -28,7 +28,7 @@ Events emitted
 ### list-nft
 
 ```
-(contract-call? .private-sale-v1 list-nft 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sip009-nft {buyer: 'ST1SJ3DTE5DN7X54YDH5D64R3BCB6A2AG2ZQ8YPD5, listing-expiry: u10, nft-id: u1, price: u10000000})
+(contract-call? .private-sale-v1 list-nft 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sip009-nft {buyer: tx-sender, listing-expiry: u5, nft-id: u1, price: u10000000})
 ```
 
 ### get-listing

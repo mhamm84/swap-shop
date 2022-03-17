@@ -11,26 +11,26 @@ const contractPrincipal = (deployer: Account) => `${deployer.address}.${contract
 
 
 Clarinet.test({
-    name: "admin-add-nft-asset-to-whitelist",
+    name: "admin-add-to-whitelist",
     async fn(chain: Chain, accounts: Map<string, Account>) {
         // Get the deployer account.
         let deployer = accounts.get('deployer')!;
         let privateSale = new PrivateSale(chain, deployer)
 
-        let receipt = privateSale.adminAddNftAssetToWhitelist(deployer, defaultNftAssetContract)
+        let receipt = privateSale.adminAddToWhitelist(deployer, defaultNftAssetContract)
         console.log(receipt) // --- { result: "(ok true)", events: [] }
         receipt.result.expectOk().expectBool(true);    
     },
 });
 
 Clarinet.test({
-    name: "admin-add-nft-asset-to-whitelist-not-deployer",
+    name: "admin-add-to-whitelist-not-deployer",
     async fn(chain: Chain, accounts: Map<string, Account>) {
         let deployer = accounts.get('deployer')!
         let wallet1 = accounts.get('wallet_1')!
         let privateSale = new PrivateSale(chain, deployer)
 
-        let receipt = privateSale.adminAddNftAssetToWhitelist(wallet1, defaultNftAssetContract)
+        let receipt = privateSale.adminAddToWhitelist(wallet1, defaultNftAssetContract)
         console.log(receipt)
         receipt.result.expectErr().expectUint(104);
     },
@@ -41,7 +41,7 @@ Clarinet.test({
     async fn(chain: Chain, accounts: Map<string, Account>) {
         let deployer = accounts.get('deployer')!;
         let privateSale = new PrivateSale(chain, deployer)
-        privateSale.adminAddNftAssetToWhitelist(deployer, defaultNftAssetContract)
+        privateSale.adminAddToWhitelist(deployer, defaultNftAssetContract)
         let call = await privateSale.isWhitelisted(deployer, defaultNftAssetContract);
         call.result.expectBool(true);
     },
@@ -52,7 +52,7 @@ Clarinet.test({
     async fn(chain: Chain, accounts: Map<string, Account>) {
         let deployer = accounts.get('deployer')!;
         let privateSale = new PrivateSale(chain, deployer)
-        privateSale.adminAddNftAssetToWhitelist(deployer, 'does-not-exist') 
+        privateSale.adminAddToWhitelist(deployer, 'does-not-exist') 
         let call = await privateSale.isWhitelisted(deployer, defaultNftAssetContract);
         call.result.expectBool(false);
     },
@@ -64,10 +64,10 @@ Clarinet.test({
         let deployer = accounts.get('deployer')!;
         let privateSale = new PrivateSale(chain, deployer)
 
-        let addedAssetRes = privateSale.adminAddNftAssetToWhitelist(deployer, defaultNftAssetContract)
+        let addedAssetRes = privateSale.adminAddToWhitelist(deployer, defaultNftAssetContract)
         addedAssetRes.result.expectOk().expectBool(true);   
 
-        let updateRes = privateSale.adminUpdateNftAssetInWhitelist(deployer, defaultNftAssetContract, false)
+        let updateRes = privateSale.adminUpdateInWhitelist(deployer, defaultNftAssetContract, false)
         updateRes.result.expectOk().expectBool(true)
     }
 })
@@ -78,7 +78,7 @@ Clarinet.test({
         let deployer = accounts.get('deployer')!;
         let privateSale = new PrivateSale(chain, deployer)
 
-        let updateRes = privateSale.adminUpdateNftAssetInWhitelist(deployer, defaultNftAssetContract, false)
+        let updateRes = privateSale.adminUpdateInWhitelist(deployer, defaultNftAssetContract, false)
         updateRes.result.expectOk().expectBool(true)
     }
 })
@@ -90,10 +90,10 @@ Clarinet.test({
         let wallet1 = accounts.get("wallet_1")!
         let privateSale = new PrivateSale(chain, deployer)
 
-        let addedAssetRes = privateSale.adminAddNftAssetToWhitelist(deployer, defaultNftAssetContract)
+        let addedAssetRes = privateSale.adminAddToWhitelist(deployer, defaultNftAssetContract)
         addedAssetRes.result.expectOk().expectBool(true);  
 
-        let updateRes = privateSale.adminUpdateNftAssetInWhitelist(wallet1, defaultNftAssetContract, false)
+        let updateRes = privateSale.adminUpdateInWhitelist(wallet1, defaultNftAssetContract, false)
         updateRes.result.expectErr().expectUint(104)
     }
 })

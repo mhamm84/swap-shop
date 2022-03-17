@@ -19,7 +19,7 @@ export interface Listing {
   listingExpiry: number
 }
 
-export const createListing = (listing: Listing) =>
+export const createListingDetails = (listing: Listing) =>
   types.tuple({
     'buyer': types.principal(listing.buyer),
     'listing-expiry': types.uint(listing.listingExpiry),
@@ -38,7 +38,28 @@ export class PrivateSale {
     this.deployer = deployer
   }
 
-  adminAddNftAssetToWhitelist(user: Account, nftAsset: string) {
+  unlistNft(seller: Account, nftId: number) {
+    let block = this.chain.mineBlock([
+      Tx.contractCall(contractName, 'unlist', [
+        types.uint(nftId)
+      ], seller.address)
+    ])
+    let [receipt] = block.receipts
+    return receipt;
+  }
+
+  listNft(seller: Account, nftAsset: string, listing: any) {
+    let block = this.chain.mineBlock([
+      Tx.contractCall(contractName, 'list-nft', [ 
+              types.principal(nftAsset),
+              listing
+          ], seller.address)
+    ]);
+    let [receipt] = block.receipts
+    return receipt;
+  }
+
+  adminAddToWhitelist(user: Account, nftAsset: string) {
     let block = this.chain.mineBlock([
       Tx.contractCall(contractName, "admin-add-nft-asset-to-whitelist", [
         types.principal(Utils.qualifiedName(nftAsset))
@@ -55,7 +76,7 @@ export class PrivateSale {
     );
   }
 
-  adminUpdateNftAssetInWhitelist(user: Account, nftAsset: string, flag: boolean) {
+  adminUpdateInWhitelist(user: Account, nftAsset: string, flag: boolean) {
     let nftAssetPrincipal = types.principal(Utils.qualifiedName(nftAsset))
     let block = this.chain.mineBlock([
       Tx.contractCall(contractName, "admin-update-nft-asset-in-whitelist", [
