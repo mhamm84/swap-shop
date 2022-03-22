@@ -12,18 +12,27 @@ const contractName = 'private-sale-v1'
 // (define-public (list-nft (nft-asset <nft-trait>) (listing-details {nft-id: uint, buyer: principal, price: uint, listing-expiry: uint}))
 // (contract-call? .private-sale-v1 list-nft 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sip009-nft {buyer: tx-sender, listing-expiry: u5, nft-id: u1, price: u10000000})
 
-export interface Listing {
+export type ListingDetails = {
   nftId: number,
   buyer: string,
   price: number,
-  listingExpiry: number
+  expiry: number
 }
 
-export const createListingDetails = (listing: Listing) =>
+export type ListingResponse = {
+  owner: string,
+  buyer: string,
+  nftId: string,
+  price: string,
+  expiry: string,
+  nftContract: string
+}
+
+export const createListingDetails = (listing: ListingDetails) =>
   types.tuple({
     'buyer': types.principal(listing.buyer),
-    'listing-expiry': types.uint(listing.listingExpiry),
-    'nft-id': types.uint(listing.nftId),
+    'expiry': types.uint(listing.expiry),
+    'nftId': types.uint(listing.nftId),
     'price': types.uint(listing.price),
   });
 

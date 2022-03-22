@@ -20,16 +20,16 @@
 
 ;; The sender lists an nft avaiable for sale at a set price for a set buyer
 ;; The listing has an expiry on it which is the block height of the stacks blockchain in  the future
-(define-public (list-nft (nft-asset <nft-trait>) (listing-details {nft-id: uint, buyer: principal, price: uint, listing-expiry: uint}))
+(define-public (list-nft (nft-asset <nft-trait>) (listing-details {nftId: uint, buyer: principal, price: uint, expiry: uint}))
     (begin
         (asserts! (is-whitelisted nft-asset) (err ERR_NOT_WHITELISTED))
-        (asserts! (> (get nft-id listing-details) u0) (err ERR_NFT_ID_INVALID))
+        (asserts! (> (get nftId listing-details) u0) (err ERR_NFT_ID_INVALID))
         (asserts! (> (get price listing-details) u0) (err ERR_PRICE_TOO_LOW))
-        (asserts! (> (get listing-expiry listing-details) block-height) (err ERR_EXPIRY_IN_PAST))
+        (asserts! (> (get expiry listing-details) block-height) (err ERR_EXPIRY_IN_PAST))
 
         (let 
                 (
-                    (owner (unwrap! (get-owner nft-asset (get nft-id listing-details)) (err ERR_NFT_OWNER_NOT_FOUND)))
+                    (owner (unwrap! (get-owner nft-asset (get nftId listing-details)) (err ERR_NFT_OWNER_NOT_FOUND)))
                     (nft-contract (contract-of nft-asset))
                     (listing-id (+ u1 (var-get next-listing-id)))
                 )
@@ -39,11 +39,11 @@
                 (map-set listings listing-id
                     {
                         owner: owner,
-                        nft-contract: nft-contract, 
-                        nft-id: (get nft-id listing-details),
+                        nftContract: nft-contract, 
+                        nftId: (get nftId listing-details),
                         buyer: (get buyer listing-details),
                         price: (get price listing-details),
-                        expiry: (get listing-expiry listing-details)
+                        expiry: (get expiry listing-details)
                     }
                 )
                 (var-set next-listing-id listing-id)
@@ -73,6 +73,49 @@
         })
         (ok true)
     )  
+)
+
+(define-public (purchase (nft-asset <nft-trait>) (listing-id uint) (price uint) ) 
+    (begin 
+        (let 
+            (
+                (listing (unwrap! (get-listing listing-id) (err ERR_NO_LISTING) ))
+                (listing-price (get price listing))
+                (listing-owner (get owner listing))
+                (listing-buyer (get buyer listing))
+                (listing-expiry (get expiry listing))
+                (listing-nft-contract (get nftContract listing))
+                (listing-nft-id (get nftId listing))
+            )
+            (asserts! (is-eq listing-buyer tx-sender) (err ERR_TX_SENDER_NOT_BUYER))
+            (asserts! (is-eq listing-price price) (err ERR_INVALID_PURCHASE_PRICE))
+            (asserts! (> listing-expiry  block-height) (err ERR_LISTING_EXPIRED))
+            (asserts! (is-eq (contract-of nft-asset) listing-nft-contract) (err ERR_INCORRECT_NFT_ASSET))
+
+            (try! (contract-call? nft-asset transfer listing-nft-id listing-owner tx-sender))
+            (try! (stx-transfer? listing-price tx-sender listing-owner))
+            (print-listing listing)    
+        )
+    )
+)
+
+(define-private (print-listing (listing { 
+                        owner: principal,
+                        nftContract: principal, 
+                        nftId: uint,
+                        buyer: principal,
+                        price: uint,
+                        expiry: uint
+                    }))
+    (begin  
+        (print {
+                    type:   "nft-private-sale",
+                    action: "list",
+                    data: { listing: (get owner listing) }
+                })
+        (ok true)
+    )
+    
 )
 
 ;; A D M I N
@@ -137,8 +180,8 @@
     uint
     { 
         owner: principal,
-        nft-contract: principal, 
-        nft-id: uint,
+        nftContract: principal, 
+        nftId: uint,
         buyer: principal,
         price: uint,
         expiry: uint
@@ -147,15 +190,20 @@
 
 ;; E R R O R S
 
-(define-constant ERR_NFT_GET_OWNER u100)
-(define-constant ERR_NFT_ID_INVALID u101)
-(define-constant ERR_TX_SENDER_NOT_OWNER u102)
-(define-constant ERR_NFT_OWNER_NOT_FOUND u103)
-(define-constant ERR_UNAUTHORIZED u104)
-(define-constant ERR_NOT_WHITELISTED u105)
-(define-constant ERR_PRICE_TOO_LOW u106)
-(define-constant ERR_EXPIRY_IN_PAST u107)
-(define-constant ERR_NO_LISTING u108)
+(define-constant ERR_NFT_ID_INVALID u100)
+(define-constant ERR_TX_SENDER_NOT_OWNER u101)
+(define-constant ERR_NFT_OWNER_NOT_FOUND u102)
+(define-constant ERR_UNAUTHORIZED u103)
+(define-constant ERR_NOT_WHITELISTED u104)
+(define-constant ERR_PRICE_TOO_LOW u105)
+(define-constant ERR_EXPIRY_IN_PAST u106)
+(define-constant ERR_NO_LISTING u107)
+(define-constant ERR_TX_SENDER_NOT_sBUYER u108)
+(define-constant ERR_INVALID_PURCHASE_PRICE u109)
+(define-constant ERR_LISTING_EXPIRED u110)
+(define-constant ERR_INCORRECT_NFT_ASSET u111)
+(define-constant ERR_TX_SENDER_NOT_BUYER u112)
+
 
 ;; W H I T E  L I S T
 

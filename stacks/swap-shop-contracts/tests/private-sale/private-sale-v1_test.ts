@@ -1,7 +1,7 @@
 
 import { Clarinet, Tx, Chain, Account, types } from 'https://deno.land/x/clarinet@v0.14.0/index.ts';
 import { assertEquals } from 'https://deno.land/std@0.90.0/testing/asserts.ts';
-import { PrivateSale, Listing, createListingDetails } from '../model/swap-shop-tests-private-sale-v1.ts';
+import { PrivateSale, ListingResponse,  createListingDetails } from '../model/swap-shop-tests-private-sale-v1.ts';
 import * as Utils from '../model/swap-shop-tests-utils.ts';
 
 //  C O N S T A N T S
@@ -24,20 +24,15 @@ Clarinet.test({
 		const { nftAsset, tokenId } = Utils.mintNft(minter);
         
         //>>>>> LIST >>>>>>
-        const listingDetails = createListingDetails({buyer: buyer.address, listingExpiry: 5, nftId: tokenId, price: 1000000})
+        const listingDetails = createListingDetails({buyer: buyer.address, expiry: 5, nftId: tokenId, price: 1000000})
         const receipt = privateSale.listNft(seller, nftAsset, listingDetails)
         receipt.result.expectOk().expectUint(tokenId)
         const listingId = receipt.result.expectOk()
 
         //>>>>> CHECK LISTING >>>>>>
         const listingReadReceipt = chain.callReadOnlyFn(contractName, 'get-listing', [listingId], deployer.address);
-        const ldr: { [key: string]: string } = listingReadReceipt.result.expectOk().expectTuple() as any;
-		ldr['owner'].expectPrincipal(seller.address);
-		ldr['nft-contract'].expectPrincipal(nftAsset);
-		ldr['nft-id'].expectUint(tokenId);
-		ldr['buyer'].expectPrincipal(buyer.address);
-		ldr['price'].expectUint(1000000);
-		ldr['expiry'].expectUint(5);
+        const ldr = listingReadReceipt.result.expectOk().expectTuple() as ListingResponse
+        checkListingResponse(ldr, seller.address, nftAsset, tokenId, buyer.address, 1000000, 5)
     },
 });
 
@@ -60,36 +55,27 @@ Clarinet.test({
         assertEquals(mintDetails2.tokenId, '2', "mint should have an id of 2")
         
         //>>>>> LIST >>>>>> 1
-        const listingDetails = createListingDetails({buyer: buyer.address, listingExpiry: 5, nftId: mintDetails1.tokenId, price: 1000000})
+        const listingDetails = createListingDetails({buyer: buyer.address, expiry: 5, nftId: mintDetails1.tokenId, price: 1000000})
         const receipt = privateSale.listNft(seller, mintDetails1.nftAsset, listingDetails)
         receipt.result.expectOk().expectUint(mintDetails1.tokenId)
         const listingId = receipt.result.expectOk()
 
         //>>>>> CHECK LISTING >>>>>> 1
         const listingReadReceipt = chain.callReadOnlyFn(contractName, 'get-listing', [listingId], deployer.address)
-        const ldr: { [key: string]: string } = listingReadReceipt.result.expectOk().expectTuple() as any
-		ldr['owner'].expectPrincipal(seller.address)
-		ldr['nft-contract'].expectPrincipal(mintDetails1.nftAsset)
-		ldr['nft-id'].expectUint(mintDetails1.tokenId)
-		ldr['buyer'].expectPrincipal(buyer.address)
-		ldr['price'].expectUint(1000000)
-		ldr['expiry'].expectUint(5)
+        const ldr = listingReadReceipt.result.expectOk().expectTuple() as ListingResponse
+        checkListingResponse(ldr, seller.address, mintDetails1.nftAsset, mintDetails1.tokenId, buyer.address, 1000000, 5)
 
         //>>>>> LIST >>>>>> 2
-        const listingDetails2 = createListingDetails({buyer: buyer.address, listingExpiry: 10, nftId: mintDetails2.tokenId, price: 1000000})
+        const listingDetails2 = createListingDetails({buyer: buyer.address, expiry: 10, nftId: mintDetails2.tokenId, price: 1000000})
         const receipt2 = privateSale.listNft(seller, mintDetails2.nftAsset, listingDetails2)
         receipt2.result.expectOk().expectUint(mintDetails2.tokenId)
         const listingId2 = receipt2.result.expectOk()
 
         //>>>>> CHECK LISTING >>>>>> 2
         const listingReadReceipt2 = chain.callReadOnlyFn(contractName, 'get-listing', [listingId2], deployer.address)
-        const ldr2: { [key: string]: string } = listingReadReceipt2.result.expectOk().expectTuple() as any
-		ldr2['owner'].expectPrincipal(seller.address)
-		ldr2['nft-contract'].expectPrincipal(mintDetails2.nftAsset)
-		ldr2['nft-id'].expectUint(mintDetails2.tokenId)
-		ldr2['buyer'].expectPrincipal(buyer.address)
-		ldr2['price'].expectUint(1000000)
-		ldr2['expiry'].expectUint(10)
+        const ldr2 = listingReadReceipt2.result.expectOk().expectTuple() as ListingResponse
+        checkListingResponse(ldr2, seller.address, mintDetails2.nftAsset, mintDetails2.tokenId, buyer.address, 1000000, 10)
+
     },
 });
 
@@ -104,9 +90,9 @@ Clarinet.test({
 		const { nftAsset, nftAssetId, tokenId } = Utils.mintNft(minter)
 
         //>>>>> LIST >>>>>>
-        const listingDetails = createListingDetails({buyer: buyer.address, listingExpiry: 5, nftId: tokenId, price: 1000000})
+        const listingDetails = createListingDetails({buyer: buyer.address, expiry: 5, nftId: tokenId, price: 1000000})
         const receipt = privateSale.listNft(seller, nftAsset, listingDetails)
-        receipt.result.expectErr().expectUint(105)
+        receipt.result.expectErr().expectUint(104)
 
     },
 });
@@ -126,9 +112,9 @@ Clarinet.test({
 		const { nftAsset, nftAssetId, tokenId } = Utils.mintNft(minter);
         
         //>>>>> LIST >>>>>>
-        const listingDetails = createListingDetails({buyer: buyer.address, listingExpiry: 5, nftId: 0, price: 1000000})
+        const listingDetails = createListingDetails({buyer: buyer.address, expiry: 5, nftId: 0, price: 1000000})
         const receipt = privateSale.listNft(seller, nftAsset, listingDetails)
-        receipt.result.expectErr().expectUint(101)
+        receipt.result.expectErr().expectUint(100)
 
     },
 });
@@ -148,9 +134,9 @@ Clarinet.test({
 		const { nftAsset, nftAssetId, tokenId } = Utils.mintNft(minter)
 
         //>>>>> LIST >>>>>>
-        const listingDetails = createListingDetails({buyer: buyer.address, listingExpiry: 5, nftId: tokenId, price: 0})
+        const listingDetails = createListingDetails({buyer: buyer.address, expiry: 5, nftId: tokenId, price: 0})
         const receipt = privateSale.listNft(seller, nftAsset, listingDetails)
-        receipt.result.expectErr().expectUint(106)
+        receipt.result.expectErr().expectUint(105)
 
     },
 });
@@ -170,9 +156,9 @@ Clarinet.test({
 		const { nftAsset, nftAssetId, tokenId } = Utils.mintNft(minter)
 
         //>>>>> LIST >>>>>>
-        const listingDetails = createListingDetails({buyer: buyer.address, listingExpiry: 1, nftId: tokenId, price: 1000000})
+        const listingDetails = createListingDetails({buyer: buyer.address, expiry: 1, nftId: tokenId, price: 1000000})
         const receipt = privateSale.listNft(seller, nftAsset, listingDetails)
-        receipt.result.expectErr().expectUint(107)
+        receipt.result.expectErr().expectUint(106)
 
     },
 });
@@ -192,9 +178,9 @@ Clarinet.test({
 		const { nftAsset, nftAssetId, tokenId } = Utils.mintNft(minter)
 
         //>>>>> LIST >>>>>>
-        const listingDetails = createListingDetails({buyer: buyer.address, listingExpiry: 5, nftId: 10, price: 1000000})
+        const listingDetails = createListingDetails({buyer: buyer.address, expiry: 5, nftId: 10, price: 1000000})
         const receipt = privateSale.listNft(seller, nftAsset, listingDetails)
-        receipt.result.expectErr().expectUint(103)
+        receipt.result.expectErr().expectUint(102)
 
     },
 });
@@ -214,9 +200,9 @@ Clarinet.test({
 		const { nftAsset, tokenId } = Utils.mintNft(minter);
         
         //>>>>> LIST >>>>>>
-        const listingDetails = createListingDetails({buyer: buyer.address, listingExpiry: 5, nftId: tokenId, price: 1000000})
+        const listingDetails = createListingDetails({buyer: buyer.address, expiry: 5, nftId: tokenId, price: 1000000})
         const receipt = privateSale.listNft(seller, nftAsset, listingDetails)
-        receipt.result.expectErr().expectUint(102)
+        receipt.result.expectErr().expectUint(101)
     },
 });
 
@@ -235,7 +221,7 @@ Clarinet.test({
 		const { nftAsset, tokenId } = Utils.mintNft(minter);
         
         //>>>>> LIST >>>>>>
-        const listingDetails = createListingDetails({buyer: buyer.address, listingExpiry: 5, nftId: tokenId, price: 1000000})
+        const listingDetails = createListingDetails({buyer: buyer.address, expiry: 5, nftId: tokenId, price: 1000000})
         const receipt = privateSale.listNft(seller, nftAsset, listingDetails)
         const listingId = receipt.result.expectOk().expectUint(1)
 
@@ -245,7 +231,7 @@ Clarinet.test({
 
         //>>>>> CHECK NO LISTING >>>>>>
         const listingReadReceipt = chain.callReadOnlyFn(contractName, 'get-listing', [types.uint(listingId)], deployer.address);
-        listingReadReceipt.result.expectErr().expectUint(108)
+        listingReadReceipt.result.expectErr().expectUint(107)
         
     },
 });
@@ -265,25 +251,18 @@ Clarinet.test({
 		const { nftAsset, tokenId } = Utils.mintNft(minter);
         
         //>>>>> LIST >>>>>>
-        const listingDetails = createListingDetails({buyer: buyer.address, listingExpiry: 5, nftId: tokenId, price: 1000000})
+        const listingDetails = createListingDetails({buyer: buyer.address, expiry: 5, nftId: tokenId, price: 1000000})
         const receipt = privateSale.listNft(seller, nftAsset, listingDetails)
         const listingId = receipt.result.expectOk().expectUint(1)
-        let listingReadReceipt1 = chain.callReadOnlyFn(contractName, 'get-listing', [types.uint(listingId)], deployer.address);
 
         //>>>>> UNLIST >>>>>>
         const unlistreceipt = privateSale.unlistNft(buyer, listingId)
-        unlistreceipt.result.expectErr().expectUint(102)
+        unlistreceipt.result.expectErr().expectUint(101)
 
-        //>>>>> CHECK LISTING >>>>>>
+        // //>>>>> CHECK LISTING >>>>>>
         const listingReadReceipt = chain.callReadOnlyFn(contractName, 'get-listing', [types.uint(listingId)], deployer.address);
-        const ldr: { [key: string]: string } = listingReadReceipt.result.expectOk().expectTuple() as any;
-		ldr['owner'].expectPrincipal(seller.address);
-		ldr['nft-contract'].expectPrincipal(nftAsset);
-		ldr['nft-id'].expectUint(tokenId);
-		ldr['buyer'].expectPrincipal(buyer.address);
-		ldr['price'].expectUint(1000000);
-		ldr['expiry'].expectUint(5);
-        
+        const ldr = listingReadReceipt.result.expectOk().expectTuple() as ListingResponse
+        checkListingResponse(ldr, seller.address, nftAsset, tokenId, buyer.address, 1000000, 5)
     },
 });
 
@@ -295,9 +274,18 @@ Clarinet.test({
 
         //>>>>> UNLIST >>>>>>
         const unlistreceipt = privateSale.unlistNft(seller, 11)
-        unlistreceipt.result.expectErr().expectUint(108)
+        unlistreceipt.result.expectErr().expectUint(107)
     },
 });
+
+function checkListingResponse(resp: ListingResponse, owner: string, nftContract: string, nftId: number, buyer: string, price: number, expiry: number) {
+    resp.owner.expectPrincipal(owner)
+    resp.nftContract.expectPrincipal(nftContract)
+    resp.nftId.expectUint(nftId)
+    resp.buyer.expectPrincipal(buyer)
+    resp.price.expectUint(price)
+    resp.expiry.expectUint(expiry)
+}
 
 
 

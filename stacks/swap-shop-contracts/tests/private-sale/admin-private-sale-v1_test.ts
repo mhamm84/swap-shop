@@ -32,7 +32,7 @@ Clarinet.test({
 
         let receipt = privateSale.adminAddToWhitelist(wallet1, defaultNftAssetContract)
         console.log(receipt)
-        receipt.result.expectErr().expectUint(104);
+        receipt.result.expectErr().expectUint(103);
     },
 });
 
@@ -94,7 +94,7 @@ Clarinet.test({
         addedAssetRes.result.expectOk().expectBool(true);  
 
         let updateRes = privateSale.adminUpdateInWhitelist(wallet1, defaultNftAssetContract, false)
-        updateRes.result.expectErr().expectUint(104)
+        updateRes.result.expectErr().expectUint(103)
     }
 })
 
@@ -118,6 +118,6 @@ Clarinet.test({
         let privateSale = new PrivateSale(chain, deployer)
 
         let updateRes = privateSale.adminSetContractOwner(newOwner, newOwner)
-        updateRes.result.expectErr().expectUint(104)
+        updateRes.result.expectErr().expectUint(103)
     }
 })
