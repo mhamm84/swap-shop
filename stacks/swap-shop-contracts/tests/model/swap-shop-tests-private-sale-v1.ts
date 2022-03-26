@@ -26,7 +26,7 @@ export type ListingResponse = {
   price: string,
   expiry: string,
   nftContract: string,
-  accepted: boolean
+  accepted: string
 }
 
 export const createListingDetails = (listing: ListingDetails) =>
@@ -79,7 +79,9 @@ export class PrivateSale {
     return receipt;
   }
 
-  createListing(seller: Account, nftAsset: string, listing: any) {
+  createListing(seller: Account, nftAsset: string, listingDetails: any) {
+
+    let listing = createListingDetails(listingDetails)
     let block = this.chain.mineBlock([
       Tx.contractCall(contractName, 'create-listing', [ 
               types.principal(nftAsset),

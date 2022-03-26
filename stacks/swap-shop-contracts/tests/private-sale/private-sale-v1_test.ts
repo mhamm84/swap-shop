@@ -14,6 +14,7 @@ Clarinet.test({
     async fn(chain: Chain, accounts: Map<string, Account>) {
         const [deployer, seller, buyer] = ['deployer', 'wallet_1', 'wallet_2'].map(name => accounts.get(name)!);
         let privateSale = new PrivateSale(chain, deployer)
+        let listPrice = 1000000
 
         //>>>>> MINT >>>>>>
         const adminEeceipt = privateSale.adminAddToWhitelist(deployer, defaultNftAssetContract)
@@ -24,15 +25,12 @@ Clarinet.test({
 		const { nftAsset, tokenId } = Utils.mintNft(minter);
         
         //>>>>> LIST >>>>>>
-        const listingDetails = createListingDetails({buyer: buyer.address, expiry: 5, nftId: tokenId, price: 1000000})
-        const receipt = privateSale.createListing(seller, nftAsset, listingDetails)
+        const receipt = privateSale.createListing(seller, nftAsset, {buyer: buyer.address, expiry: 5, nftId: tokenId, price: listPrice})
         receipt.result.expectOk().expectUint(tokenId)
-        const listingId = receipt.result.expectOk()
+        const listingId = receipt.result.expectOk().expectUint(1)
 
         //>>>>> CHECK LISTING >>>>>>
-        const listingReadReceipt = chain.callReadOnlyFn(contractName, 'get-listing', [listingId], deployer.address);
-        const ldr = listingReadReceipt.result.expectOk().expectTuple() as ListingResponse
-        checkListingResponse(ldr, seller.address, nftAsset, tokenId, buyer.address, 1000000, 5)
+        checkListingResponse(chain, deployer, listingId, seller.address, nftAsset, tokenId, buyer.address, listPrice, 5, false)
     },
 });
 
@@ -41,6 +39,7 @@ Clarinet.test({
     async fn(chain: Chain, accounts: Map<string, Account>) {
         const [deployer, seller, buyer] = ['deployer', 'wallet_1', 'wallet_2'].map(name => accounts.get(name)!)
         let privateSale = new PrivateSale(chain, deployer)
+        let listPrice = 1000000
 
         //>>>>> MINT >>>>>>
         const adminEeceipt = privateSale.adminAddToWhitelist(deployer, defaultNftAssetContract)
@@ -55,27 +54,20 @@ Clarinet.test({
         assertEquals(mintDetails2.tokenId, '2', "mint should have an id of 2")
         
         //>>>>> LIST >>>>>> 1
-        const listingDetails = createListingDetails({buyer: buyer.address, expiry: 5, nftId: mintDetails1.tokenId, price: 1000000})
-        const receipt = privateSale.createListing(seller, mintDetails1.nftAsset, listingDetails)
+        const receipt = privateSale.createListing(seller, mintDetails1.nftAsset, {buyer: buyer.address, expiry: 5, nftId: mintDetails1.tokenId, price: listPrice})
         receipt.result.expectOk().expectUint(mintDetails1.tokenId)
-        const listingId = receipt.result.expectOk()
+        const listingId = receipt.result.expectOk().expectUint(1)
 
         //>>>>> CHECK LISTING >>>>>> 1
-        const listingReadReceipt = chain.callReadOnlyFn(contractName, 'get-listing', [listingId], deployer.address)
-        const ldr = listingReadReceipt.result.expectOk().expectTuple() as ListingResponse
-        checkListingResponse(ldr, seller.address, mintDetails1.nftAsset, mintDetails1.tokenId, buyer.address, 1000000, 5)
+        checkListingResponse(chain, deployer, listingId, seller.address, mintDetails1.nftAsset, mintDetails1.tokenId, buyer.address, listPrice, 5, false)
 
         //>>>>> LIST >>>>>> 2
-        const listingDetails2 = createListingDetails({buyer: buyer.address, expiry: 10, nftId: mintDetails2.tokenId, price: 1000000})
-        const receipt2 = privateSale.createListing(seller, mintDetails2.nftAsset, listingDetails2)
+        const receipt2 = privateSale.createListing(seller, mintDetails2.nftAsset, {buyer: buyer.address, expiry: 10, nftId: mintDetails2.tokenId, price: listPrice})
         receipt2.result.expectOk().expectUint(mintDetails2.tokenId)
-        const listingId2 = receipt2.result.expectOk()
+        const listingId2 = receipt2.result.expectOk().expectUint(2)
 
         //>>>>> CHECK LISTING >>>>>> 2
-        const listingReadReceipt2 = chain.callReadOnlyFn(contractName, 'get-listing', [listingId2], deployer.address)
-        const ldr2 = listingReadReceipt2.result.expectOk().expectTuple() as ListingResponse
-        checkListingResponse(ldr2, seller.address, mintDetails2.nftAsset, mintDetails2.tokenId, buyer.address, 1000000, 10)
-
+        checkListingResponse(chain, deployer, listingId2, seller.address, mintDetails2.nftAsset, mintDetails2.tokenId, buyer.address, listPrice, 10, false)
     },
 });
 
@@ -84,14 +76,14 @@ Clarinet.test({
     async fn(chain: Chain, accounts: Map<string, Account>) {
         const [deployer, seller, buyer] = ['deployer', 'wallet_1', 'wallet_2'].map(name => accounts.get(name)!)
         const privateSale = new PrivateSale(chain, deployer)
+        let listPrice = 1000000
 
         //>>>>> MINT >>>>>>
         const minter = {chain: chain, deployer: deployer, recipient: seller, nftAsset: defaultNftAssetContract}
 		const { nftAsset, nftAssetId, tokenId } = Utils.mintNft(minter)
 
         //>>>>> LIST >>>>>>
-        const listingDetails = createListingDetails({buyer: buyer.address, expiry: 5, nftId: tokenId, price: 1000000})
-        const receipt = privateSale.createListing(seller, nftAsset, listingDetails)
+        const receipt = privateSale.createListing(seller, nftAsset, {buyer: buyer.address, expiry: 5, nftId: tokenId, price: listPrice})
         receipt.result.expectErr().expectUint(1004)
 
     },
@@ -102,6 +94,7 @@ Clarinet.test({
     async fn(chain: Chain, accounts: Map<string, Account>) {
         const [deployer, seller, buyer] = ['deployer', 'wallet_1', 'wallet_2'].map(name => accounts.get(name)!);
         const privateSale = new PrivateSale(chain, deployer)
+        let listPrice = 1000000
 
         //>>>>> MINT >>>>>>
         const adminReceipt = privateSale.adminAddToWhitelist(deployer, defaultNftAssetContract)
@@ -112,10 +105,8 @@ Clarinet.test({
 		const { nftAsset, nftAssetId, tokenId } = Utils.mintNft(minter);
         
         //>>>>> LIST >>>>>>
-        const listingDetails = createListingDetails({buyer: buyer.address, expiry: 5, nftId: 0, price: 1000000})
-        const receipt = privateSale.createListing(seller, nftAsset, listingDetails)
+        const receipt = privateSale.createListing(seller, nftAsset, {buyer: buyer.address, expiry: 5, nftId: 0, price: listPrice})
         receipt.result.expectErr().expectUint(1000)
-
     },
 });
 
@@ -124,6 +115,7 @@ Clarinet.test({
     async fn(chain: Chain, accounts: Map<string, Account>) {
         const [deployer, seller, buyer] = ['deployer', 'wallet_1', 'wallet_2'].map(name => accounts.get(name)!)
         const privateSale = new PrivateSale(chain, deployer)
+        let listPrice = 0
 
         //>>>>> MINT >>>>>>
         const adminReceipt = privateSale.adminAddToWhitelist(deployer, defaultNftAssetContract)
@@ -134,10 +126,8 @@ Clarinet.test({
 		const { nftAsset, nftAssetId, tokenId } = Utils.mintNft(minter)
 
         //>>>>> LIST >>>>>>
-        const listingDetails = createListingDetails({buyer: buyer.address, expiry: 5, nftId: tokenId, price: 0})
-        const receipt = privateSale.createListing(seller, nftAsset, listingDetails)
+        const receipt = privateSale.createListing(seller, nftAsset, {buyer: buyer.address, expiry: 5, nftId: tokenId, price: listPrice})
         receipt.result.expectErr().expectUint(1005)
-
     },
 });
 
@@ -146,6 +136,7 @@ Clarinet.test({
     async fn(chain: Chain, accounts: Map<string, Account>) {
         const [deployer, seller, buyer] = ['deployer', 'wallet_1', 'wallet_2'].map(name => accounts.get(name)!)
         const privateSale = new PrivateSale(chain, deployer)
+        let listPrice = 1000000
 
         //>>>>> MINT >>>>>>
         const adminReceipt = privateSale.adminAddToWhitelist(deployer, defaultNftAssetContract)
@@ -156,10 +147,8 @@ Clarinet.test({
 		const { nftAsset, nftAssetId, tokenId } = Utils.mintNft(minter)
 
         //>>>>> LIST >>>>>>
-        const listingDetails = createListingDetails({buyer: buyer.address, expiry: 1, nftId: tokenId, price: 1000000})
-        const receipt = privateSale.createListing(seller, nftAsset, listingDetails)
+        const receipt = privateSale.createListing(seller, nftAsset, {buyer: buyer.address, expiry: 1, nftId: tokenId, price: listPrice})
         receipt.result.expectErr().expectUint(1006)
-
     },
 });
 
@@ -168,6 +157,7 @@ Clarinet.test({
     async fn(chain: Chain, accounts: Map<string, Account>) {
         const [deployer, seller, buyer] = ['deployer', 'wallet_1', 'wallet_2'].map(name => accounts.get(name)!);
         const privateSale = new PrivateSale(chain, deployer)
+        let listPrice = 1000000
 
         //>>>>> WHITELIST >>>>>>
         const adminReceipt = privateSale.adminAddToWhitelist(deployer, defaultNftAssetContract)
@@ -178,10 +168,8 @@ Clarinet.test({
 		const { nftAsset, nftAssetId, tokenId } = Utils.mintNft(minter)
 
         //>>>>> LIST >>>>>>
-        const listingDetails = createListingDetails({buyer: buyer.address, expiry: 5, nftId: 10, price: 1000000})
-        const receipt = privateSale.createListing(seller, nftAsset, listingDetails)
+        const receipt = privateSale.createListing(seller, nftAsset, {buyer: buyer.address, expiry: 5, nftId: 10, price: listPrice})
         receipt.result.expectErr().expectUint(1002)
-
     },
 });
 
@@ -190,6 +178,7 @@ Clarinet.test({
     async fn(chain: Chain, accounts: Map<string, Account>) {
         const [deployer, seller, buyer] = ['deployer', 'wallet_1', 'wallet_2'].map(name => accounts.get(name)!);
         const privateSale = new PrivateSale(chain, deployer)
+        let listPrice = 1000000
 
         //>>>>> WHITELIST >>>>>>
         const adminReceipt = privateSale.adminAddToWhitelist(deployer, defaultNftAssetContract)
@@ -200,8 +189,7 @@ Clarinet.test({
 		const { nftAsset, tokenId } = Utils.mintNft(minter);
         
         //>>>>> LIST >>>>>>
-        const listingDetails = createListingDetails({buyer: buyer.address, expiry: 5, nftId: tokenId, price: 1000000})
-        const receipt = privateSale.createListing(seller, nftAsset, listingDetails)
+        const receipt = privateSale.createListing(seller, nftAsset, {buyer: buyer.address, expiry: 5, nftId: tokenId, price: listPrice})
         receipt.result.expectErr().expectUint(1001)
     },
 });
@@ -211,6 +199,7 @@ Clarinet.test({
     async fn(chain: Chain, accounts: Map<string, Account>) {
         const [deployer, seller, buyer] = ['deployer', 'wallet_1', 'wallet_2'].map(name => accounts.get(name)!);
         let privateSale = new PrivateSale(chain, deployer)
+        let listPrice = 1000000
 
         //>>>>> WHITELIST >>>>>>
         const adminEeceipt = privateSale.adminAddToWhitelist(deployer, defaultNftAssetContract)
@@ -221,8 +210,7 @@ Clarinet.test({
 		const { nftAsset, tokenId } = Utils.mintNft(minter);
         
         //>>>>> LIST >>>>>>
-        const listingDetails = createListingDetails({buyer: buyer.address, expiry: 5, nftId: tokenId, price: 1000000})
-        const receipt = privateSale.createListing(seller, nftAsset, listingDetails)
+        const receipt = privateSale.createListing(seller, nftAsset, {buyer: buyer.address, expiry: 5, nftId: tokenId, price: listPrice})
         const listingId = receipt.result.expectOk().expectUint(1)
 
         //>>>>> UNLIST >>>>>>
@@ -241,6 +229,7 @@ Clarinet.test({
     async fn(chain: Chain, accounts: Map<string, Account>) {
         const [deployer, seller, buyer] = ['deployer', 'wallet_1', 'wallet_2'].map(name => accounts.get(name)!);
         let privateSale = new PrivateSale(chain, deployer)
+        let listPrice = 1000000
 
         //>>>>> WHITELIST >>>>>>
         const adminEeceipt = privateSale.adminAddToWhitelist(deployer, defaultNftAssetContract)
@@ -251,8 +240,7 @@ Clarinet.test({
 		const { nftAsset, tokenId } = Utils.mintNft(minter);
         
         //>>>>> LIST >>>>>>
-        const listingDetails = createListingDetails({buyer: buyer.address, expiry: 5, nftId: tokenId, price: 1000000})
-        const receipt = privateSale.createListing(seller, nftAsset, listingDetails)
+        const receipt = privateSale.createListing(seller, nftAsset, {buyer: buyer.address, expiry: 5, nftId: tokenId, price: listPrice})
         const listingId = receipt.result.expectOk().expectUint(1)
 
         //>>>>> UNLIST >>>>>>
@@ -260,9 +248,7 @@ Clarinet.test({
         unlistreceipt.result.expectErr().expectUint(1001)
 
         // //>>>>> CHECK LISTING >>>>>>
-        const listingReadReceipt = chain.callReadOnlyFn(contractName, 'get-listing', [types.uint(listingId)], deployer.address);
-        const ldr = listingReadReceipt.result.expectOk().expectTuple() as ListingResponse
-        checkListingResponse(ldr, seller.address, nftAsset, tokenId, buyer.address, 1000000, 5)
+        checkListingResponse(chain, deployer, listingId, seller.address, nftAsset, tokenId, buyer.address, listPrice, 5, false)
     },
 });
 
@@ -279,7 +265,7 @@ Clarinet.test({
 });
 
 Clarinet.test({
-    name: "confirm-sale",
+    name: "accept-listing-terms",
     async fn(chain: Chain, accounts: Map<string, Account>) {
         const [deployer, seller, buyer] = ['deployer', 'wallet_1', 'wallet_2'].map(name => accounts.get(name)!);
         let privateSale = new PrivateSale(chain, deployer)
@@ -294,16 +280,13 @@ Clarinet.test({
 		const { nftAsset, tokenId } = Utils.mintNft(minter);
         
         //>>>>> [SELLER] -> LIST >>>>>>
-        const listingDetails = createListingDetails({buyer: buyer.address, expiry: 5, nftId: tokenId, price: listPrice})
-        const receipt = privateSale.createListing(seller, nftAsset, listingDetails)
+        const receipt = privateSale.createListing(seller, nftAsset, {buyer: buyer.address, expiry: 5, nftId: tokenId, price: listPrice})
         receipt.result.expectOk().expectUint(tokenId)
         const listingId = receipt.result.expectOk().expectUint(1)
         console.log("listingId: " + listingId)
 
         //>>>>> CHECK LISTING >>>>>>
-        const listingReadReceipt = chain.callReadOnlyFn(contractName, 'get-listing', [types.uint(listingId)], deployer.address);
-        const ldr = listingReadReceipt.result.expectOk().expectTuple() as ListingResponse
-        checkListingResponse(ldr, seller.address, nftAsset, tokenId, buyer.address, listPrice, 5)
+        checkListingResponse(chain, deployer, listingId, seller.address, nftAsset, tokenId, buyer.address, listPrice, 5, false)
 
         //>>>>> [BUYER] -> ACCEPT TERMS >>>>>>
         const acceptReceipt = privateSale.acceptListingTerms(buyer, listingId)
@@ -314,7 +297,7 @@ Clarinet.test({
 });
 
 Clarinet.test({
-    name: "confirm-sale-no-listing",
+    name: "accept-listing-terms-no-listing",
     async fn(chain: Chain, accounts: Map<string, Account>) {
         const [deployer, seller, buyer] = ['deployer', 'wallet_1', 'wallet_2'].map(name => accounts.get(name)!);
         let privateSale = new PrivateSale(chain, deployer)
@@ -329,16 +312,13 @@ Clarinet.test({
 		const { nftAsset, tokenId } = Utils.mintNft(minter);
         
         //>>>>> [SELLER] -> LIST >>>>>>
-        const listingDetails = createListingDetails({buyer: buyer.address, expiry: 5, nftId: tokenId, price: listPrice})
-        const receipt = privateSale.createListing(seller, nftAsset, listingDetails)
+        const receipt = privateSale.createListing(seller, nftAsset, {buyer: buyer.address, expiry: 5, nftId: tokenId, price: listPrice})
         receipt.result.expectOk().expectUint(tokenId)
         const listingId = receipt.result.expectOk().expectUint(1)
         console.log("listingId: " + listingId)
 
         //>>>>> CHECK LISTING >>>>>>
-        const listingReadReceipt = chain.callReadOnlyFn(contractName, 'get-listing', [types.uint(listingId)], deployer.address);
-        const ldr = listingReadReceipt.result.expectOk().expectTuple() as ListingResponse
-        checkListingResponse(ldr, seller.address, nftAsset, tokenId, buyer.address, listPrice, 5)
+        checkListingResponse(chain, deployer, listingId, seller.address, nftAsset, tokenId, buyer.address, listPrice, 5, false)
 
         //>>>>> [BUYER] -> ACCEPT TERMS >>>>>>
         const acceptReceipt = privateSale.acceptListingTerms(buyer, 101)
@@ -349,7 +329,7 @@ Clarinet.test({
 });
 
 Clarinet.test({
-    name: "confirm-sale-not-buyer",
+    name: "accept-listing-terms-not-buyer",
     async fn(chain: Chain, accounts: Map<string, Account>) {
         const [deployer, seller, buyer] = ['deployer', 'wallet_1', 'wallet_2'].map(name => accounts.get(name)!);
         let privateSale = new PrivateSale(chain, deployer)
@@ -364,16 +344,13 @@ Clarinet.test({
 		const { nftAsset, tokenId } = Utils.mintNft(minter);
         
         //>>>>> [SELLER] -> LIST >>>>>>
-        const listingDetails = createListingDetails({buyer: buyer.address, expiry: 5, nftId: tokenId, price: listPrice})
-        const receipt = privateSale.createListing(seller, nftAsset, listingDetails)
+        const receipt = privateSale.createListing(seller, nftAsset, {buyer: buyer.address, expiry: 5, nftId: tokenId, price: listPrice})
         receipt.result.expectOk().expectUint(tokenId)
         const listingId = receipt.result.expectOk().expectUint(1)
         console.log("listingId: " + listingId)
 
         //>>>>> CHECK LISTING >>>>>>
-        const listingReadReceipt = chain.callReadOnlyFn(contractName, 'get-listing', [types.uint(listingId)], deployer.address);
-        const ldr = listingReadReceipt.result.expectOk().expectTuple() as ListingResponse
-        checkListingResponse(ldr, seller.address, nftAsset, tokenId, buyer.address, listPrice, 5)
+        checkListingResponse(chain, deployer, listingId, seller.address, nftAsset, tokenId, buyer.address, listPrice, 5, false)
 
         //>>>>> [BUYER] -> ACCEPT TERMS >>>>>>
         const acceptReceipt = privateSale.acceptListingTerms(seller, listingId)
@@ -383,13 +360,88 @@ Clarinet.test({
     },
 });
 
-function checkListingResponse(resp: ListingResponse, owner: string, nftContract: string, nftId: number, buyer: string, price: number, expiry: number) {
-    resp.owner.expectPrincipal(owner)
-    resp.nftContract.expectPrincipal(nftContract)
-    resp.nftId.expectUint(nftId)
-    resp.buyer.expectPrincipal(buyer)
-    resp.price.expectUint(price)
-    resp.expiry.expectUint(expiry)
+Clarinet.test({
+    name: "accept-listing-expired",
+    async fn(chain: Chain, accounts: Map<string, Account>) {
+        const [deployer, seller, buyer] = ['deployer', 'wallet_1', 'wallet_2'].map(name => accounts.get(name)!);
+        let privateSale = new PrivateSale(chain, deployer)
+        let listPrice = 1000000
+
+        //>>>>> MINT >>>>>>
+        const adminEeceipt = privateSale.adminAddToWhitelist(deployer, defaultNftAssetContract)
+        adminEeceipt.result.expectOk().expectBool(true);    
+
+        //>>>>> MINT >>>>>>
+        const minter = {chain: chain, deployer: deployer, recipient: seller, nftAsset: defaultNftAssetContract}
+		const { nftAsset, tokenId } = Utils.mintNft(minter);
+        
+        //>>>>> [SELLER] -> LIST >>>>>>
+        const receipt = privateSale.createListing(seller, nftAsset, {buyer: buyer.address, expiry: 5, nftId: tokenId, price: listPrice})
+        receipt.result.expectOk().expectUint(tokenId)
+        const listingId = receipt.result.expectOk().expectUint(1)
+        console.log("listingId: " + listingId)
+
+        //>>>>> CHECK LISTING >>>>>>
+        checkListingResponse(chain, deployer, listingId, seller.address, nftAsset, tokenId, buyer.address, listPrice, 5, false)
+
+        chain.mineEmptyBlock(10)
+
+        //>>>>> [BUYER] -> ACCEPT TERMS >>>>>>
+        const acceptReceipt = privateSale.acceptListingTerms(buyer, listingId)
+        console.log(acceptReceipt.result)
+        acceptReceipt.result.expectErr().expectUint(1010)
+
+    },
+});
+
+Clarinet.test({
+    name: "accept-listing-already-accepted",
+    async fn(chain: Chain, accounts: Map<string, Account>) {
+        const [deployer, seller, buyer] = ['deployer', 'wallet_1', 'wallet_2'].map(name => accounts.get(name)!);
+        let privateSale = new PrivateSale(chain, deployer)
+        let listPrice = 1000000
+
+        //>>>>> MINT >>>>>>
+        const adminEeceipt = privateSale.adminAddToWhitelist(deployer, defaultNftAssetContract)
+        adminEeceipt.result.expectOk().expectBool(true);    
+
+        //>>>>> MINT >>>>>>
+        const minter = {chain: chain, deployer: deployer, recipient: seller, nftAsset: defaultNftAssetContract}
+		const { nftAsset, tokenId } = Utils.mintNft(minter);
+        
+        //>>>>> [SELLER] -> LIST >>>>>>
+        const receipt = privateSale.createListing(seller, nftAsset, {buyer: buyer.address, expiry: 10, nftId: tokenId, price: listPrice})
+        receipt.result.expectOk().expectUint(tokenId)
+        const listingId = receipt.result.expectOk().expectUint(1)
+
+        //>>>>> CHECK LISTING >>>>>>
+        checkListingResponse(chain, deployer, listingId, seller.address, nftAsset, tokenId, buyer.address, listPrice, 10, false)
+
+        //>>>>> [BUYER] -> ACCEPT TERMS >>>>>>
+        const acceptReceipt = privateSale.acceptListingTerms(buyer, listingId)
+        acceptReceipt.result.expectOk().expectBool(true)
+
+        //>>>>> [BUYER] -> ACCEPT TERMS AGAIN >>>>>>
+        const acceptReceipt2 = privateSale.acceptListingTerms(buyer, listingId)
+        acceptReceipt2.result.expectErr().expectUint(1013)
+
+    },
+});
+
+function checkListingResponse(
+        chain: Chain, user: Account, listingId: number,
+        owner: string, nftContract: string, nftId: number, buyer: string, price: number, expiry: number, accepted: boolean) {
+
+        const listingReadReceipt = chain.callReadOnlyFn(contractName, 'get-listing', [types.uint(listingId)], user.address);
+        const ldr = listingReadReceipt.result.expectOk().expectTuple() as ListingResponse
+
+        ldr.owner.expectPrincipal(owner)
+        ldr.nftContract.expectPrincipal(nftContract)
+        ldr.nftId.expectUint(nftId)
+        ldr.buyer.expectPrincipal(buyer)
+        ldr.price.expectUint(price)
+        ldr.expiry.expectUint(expiry)
+        ldr.accepted.expectBool(accepted)
 }
 
 

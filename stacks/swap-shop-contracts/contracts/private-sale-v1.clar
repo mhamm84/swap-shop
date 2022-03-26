@@ -36,8 +36,7 @@
                 
                 (asserts! (is-eq owner tx-sender) (err ERR_TX_SENDER_NOT_OWNER))
 
-                (map-set listings {listingId: listing-id}
-                    {
+                (map-set listings {listingId: listing-id} {
                         owner: owner,
                         nftContract: nft-contract, 
                         nftId: (get nftId listing-details),
@@ -48,11 +47,7 @@
                     }
                 )
                 (var-set next-listing-id listing-id)
-                (print {
-                    type:   "nft-private-sale",
-                    action: "list",
-                    data: { listing: (map-get? listings {listingId: listing-id}) }
-                })
+                (let ((newListing (unwrap! (get-listing listing-id) (err ERR_NO_LISTING)))) (print-listing "create-listing" newListing))
                 (ok listing-id)
         )
     )
@@ -67,6 +62,7 @@
         (map-delete listings {listingId: listing-id})
 
         (print-listing "unlist" listing)
+        (ok true)
     )  
 )
 
@@ -108,6 +104,7 @@
             (try! (contract-call? nft-asset transfer listing-nft-id tx-sender listing-buyer))
             (try! (stx-transfer? listing-price tx-sender listing-owner))
             (print-listing "confirm-sale" listing)
+            (ok true)
         )
     )
 )
@@ -119,14 +116,8 @@
                         buyer: principal,
                         price: uint,
                         expiry: uint,
-                        accepted: bool
-                    }))
-    (begin  
-        (print {    type:   "nft-private-sale",
-                    action: action,
-                    data: { listing: (get owner listing) } })
-        (ok true)
-    )
+                        accepted: bool}))
+        (print { type: "nft-private-sale", action: action, data: { listing: (get owner listing)}})
 )
 
 ;; A D M I N
@@ -183,8 +174,7 @@
 (define-map whitelist principal bool)
 
 ;; listings of private nft sales
-(define-map listings 
-    {   listingId: uint    }
+(define-map listings {   listingId: uint    }
     { 
         owner: principal,
         nftContract: principal, 
