@@ -20,7 +20,7 @@
 
 ;; The sender lists an nft avaiable for sale at a set price for a set buyer
 ;; The listing has an expiry on it which is the block height of the stacks blockchain in  the future
-(define-public (list-nft (nft-asset <nft-trait>) (listing-details {nftId: uint, buyer: principal, price: uint, expiry: uint}))
+(define-public (create-listing (nft-asset <nft-trait>) (listing-details {nftId: uint, buyer: principal, price: uint, expiry: uint}))
     (begin
         (asserts! (is-whitelisted nft-asset) (err ERR_NOT_WHITELISTED))
         (asserts! (> (get nftId listing-details) u0) (err ERR_NFT_ID_INVALID))
@@ -36,46 +36,60 @@
                 
                 (asserts! (is-eq owner tx-sender) (err ERR_TX_SENDER_NOT_OWNER))
 
-                (map-set listings listing-id
+                (map-set listings {listingId: listing-id}
                     {
                         owner: owner,
                         nftContract: nft-contract, 
                         nftId: (get nftId listing-details),
                         buyer: (get buyer listing-details),
                         price: (get price listing-details),
-                        expiry: (get expiry listing-details)
+                        expiry: (get expiry listing-details),
+                        accepted: false,
                     }
                 )
                 (var-set next-listing-id listing-id)
                 (print {
                     type:   "nft-private-sale",
                     action: "list",
-                    data: { listing: (map-get? listings listing-id) }
+                    data: { listing: (map-get? listings {listingId: listing-id}) }
                 })
                 (ok listing-id)
         )
     )
 )
 
-;; unlist
 (define-public (unlist (listing-id uint))
     (let 
         (
             (listing (unwrap! (get-listing listing-id) (err ERR_NO_LISTING) ))
         )
         (asserts! (is-eq (get owner listing) tx-sender) (err ERR_TX_SENDER_NOT_OWNER))
-        (map-delete listings listing-id)
+        (map-delete listings {listingId: listing-id})
 
-        (print {
-            type:   "nft-private-sale",
-            action: "unlist",
-            data: { listing: listing }
-        })
-        (ok true)
+        (print-listing "unlist" listing)
     )  
 )
 
-(define-public (purchase (nft-asset <nft-trait>) (listing-id uint) (price uint) ) 
+(define-public (accept-listing-terms (listing-id uint)) 
+    (begin  
+        (let 
+            (
+                (listing (unwrap! (get-listing listing-id) (err ERR_NO_LISTING) ))
+                (listing-buyer (get buyer listing))
+                (listing-expiry (get expiry listing))
+                (listing-accepted (get accepted listing))
+            )
+
+            (asserts! (is-eq listing-buyer tx-sender) (err ERR_TX_SENDER_NOT_BUYER))
+            (asserts! (> listing-expiry  block-height) (err ERR_LISTING_EXPIRED))
+            (asserts! (is-eq listing-accepted false) (err ERR_LISTING_ACCEPTED))
+
+            (ok (map-set listings {listingId: listing-id} (merge listing {accepted: true})))
+        )
+    )
+)
+
+(define-public (confirm-sale (nft-asset <nft-trait>) (listing-id uint) ) 
     (begin 
         (let 
             (
@@ -87,35 +101,32 @@
                 (listing-nft-contract (get nftContract listing))
                 (listing-nft-id (get nftId listing))
             )
-            (asserts! (is-eq listing-buyer tx-sender) (err ERR_TX_SENDER_NOT_BUYER))
-            (asserts! (is-eq listing-price price) (err ERR_INVALID_PURCHASE_PRICE))
+            (asserts! (is-eq tx-sender listing-owner) (err ERR_TX_SENDER_NOT_OWNER))
             (asserts! (> listing-expiry  block-height) (err ERR_LISTING_EXPIRED))
             (asserts! (is-eq (contract-of nft-asset) listing-nft-contract) (err ERR_INCORRECT_NFT_ASSET))
 
-            (try! (contract-call? nft-asset transfer listing-nft-id listing-owner tx-sender))
+            (try! (contract-call? nft-asset transfer listing-nft-id tx-sender listing-buyer))
             (try! (stx-transfer? listing-price tx-sender listing-owner))
-            (print-listing listing)    
+            (print-listing "confirm-sale" listing)
         )
     )
 )
 
-(define-private (print-listing (listing { 
+(define-private (print-listing (action (string-ascii 25)) (listing { 
                         owner: principal,
                         nftContract: principal, 
                         nftId: uint,
                         buyer: principal,
                         price: uint,
-                        expiry: uint
+                        expiry: uint,
+                        accepted: bool
                     }))
     (begin  
-        (print {
-                    type:   "nft-private-sale",
-                    action: "list",
-                    data: { listing: (get owner listing) }
-                })
+        (print {    type:   "nft-private-sale",
+                    action: action,
+                    data: { listing: (get owner listing) } })
         (ok true)
     )
-    
 )
 
 ;; A D M I N
@@ -148,12 +159,8 @@
     (default-to false (map-get? whitelist (contract-of nft-asset)))
 )
 
-;; (define-read-only (get-listing (listing-id uint))
-;;     (map-get? listings listing-id)
-;; )
-
 (define-read-only (get-listing (listing-id uint))
-    (ok (unwrap! (map-get? listings listing-id) (err ERR_NO_LISTING)))
+    (ok (unwrap! (map-get? listings {listingId: listing-id}) (err ERR_NO_LISTING)))
 )
 
 
@@ -177,33 +184,34 @@
 
 ;; listings of private nft sales
 (define-map listings 
-    uint
+    {   listingId: uint    }
     { 
         owner: principal,
         nftContract: principal, 
         nftId: uint,
         buyer: principal,
         price: uint,
-        expiry: uint
+        expiry: uint,
+        accepted: bool
     }
 )
 
 ;; E R R O R S
 
-(define-constant ERR_NFT_ID_INVALID u100)
-(define-constant ERR_TX_SENDER_NOT_OWNER u101)
-(define-constant ERR_NFT_OWNER_NOT_FOUND u102)
-(define-constant ERR_UNAUTHORIZED u103)
-(define-constant ERR_NOT_WHITELISTED u104)
-(define-constant ERR_PRICE_TOO_LOW u105)
-(define-constant ERR_EXPIRY_IN_PAST u106)
-(define-constant ERR_NO_LISTING u107)
-(define-constant ERR_TX_SENDER_NOT_sBUYER u108)
-(define-constant ERR_INVALID_PURCHASE_PRICE u109)
-(define-constant ERR_LISTING_EXPIRED u110)
-(define-constant ERR_INCORRECT_NFT_ASSET u111)
-(define-constant ERR_TX_SENDER_NOT_BUYER u112)
-
+(define-constant ERR_NFT_ID_INVALID u1000)
+(define-constant ERR_TX_SENDER_NOT_OWNER u1001)
+(define-constant ERR_NFT_OWNER_NOT_FOUND u1002)
+(define-constant ERR_UNAUTHORIZED u1003)
+(define-constant ERR_NOT_WHITELISTED u1004)
+(define-constant ERR_PRICE_TOO_LOW u1005)
+(define-constant ERR_EXPIRY_IN_PAST u1006)
+(define-constant ERR_NO_LISTING u1007)
+(define-constant ERR_TX_SENDER_NOT_sBUYER u1008)
+(define-constant ERR_INVALID_PURCHASE_PRICE u1009)
+(define-constant ERR_LISTING_EXPIRED u1010)
+(define-constant ERR_INCORRECT_NFT_ASSET u1011)
+(define-constant ERR_TX_SENDER_NOT_BUYER u1012)
+(define-constant ERR_LISTING_ACCEPTED u1013)
 
 ;; W H I T E  L I S T
 
