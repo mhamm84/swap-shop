@@ -98,26 +98,3 @@ Clarinet.test({
     }
 })
 
-Clarinet.test({
-    name: "admin-set-contract-owner",
-    async fn(chain: Chain, accounts: Map<string, Account>) {
-        let deployer = accounts.get('deployer')!;
-        let newOwner = accounts.get("wallet_1")!
-        let privateSale = new PrivateSale(chain, deployer)
-
-        let updateRes = privateSale.adminSetContractOwner(deployer, newOwner)
-        updateRes.result.expectOk().expectBool(true)
-    }
-})
-
-Clarinet.test({
-    name: "admin-set-contract-owner-not-current-owner",
-    async fn(chain: Chain, accounts: Map<string, Account>) {
-        let deployer = accounts.get('deployer')!;
-        let newOwner = accounts.get("wallet_1")!
-        let privateSale = new PrivateSale(chain, deployer)
-
-        let updateRes = privateSale.adminSetContractOwner(newOwner, newOwner)
-        updateRes.result.expectErr().expectUint(1003)
-    }
-})

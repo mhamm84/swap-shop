@@ -48,37 +48,6 @@ export class PrivateSale {
     this.deployer = deployer
   }
 
-  acceptListingTerms(buyer:Account, listingId: number) {
-    let block = this.chain.mineBlock([
-      Tx.contractCall(contractName, 'accept-listing-terms',[
-        types.uint(listingId),
-      ], buyer.address)
-    ])
-    let [receipt] = block.receipts
-    return receipt;
-  }
-
-  confirmSale(buyer:Account, nftAsset: string, listingId: number) {
-    let block = this.chain.mineBlock([
-      Tx.contractCall(contractName, 'confirm-sale',[
-        types.principal(nftAsset),
-        types.uint(listingId),
-      ], buyer.address)
-    ])
-    let [receipt] = block.receipts
-    return receipt;
-  }
-
-  unlist(seller: Account, nftId: number) {
-    let block = this.chain.mineBlock([
-      Tx.contractCall(contractName, 'unlist', [
-        types.uint(nftId)
-      ], seller.address)
-    ])
-    let [receipt] = block.receipts
-    return receipt;
-  }
-
   createListing(seller: Account, nftAsset: string, listingDetails: any) {
 
     let listing = createListingDetails(listingDetails)
@@ -88,6 +57,28 @@ export class PrivateSale {
               listing
           ], seller.address)
     ]);
+    let [receipt] = block.receipts
+    return receipt;
+  }
+
+  purchase(buyer: Account, nftAsset: string, nftId: number) {
+    let block = this.chain.mineBlock([
+      Tx.contractCall(contractName, 'purchase', [
+        types.principal(nftAsset),
+        types.uint(nftId)
+      ], buyer.address)
+    ])
+    let [receipt] = block.receipts
+    return receipt;
+  }
+
+  unlist(seller: Account, nftAsset: string, nftId: number) {
+    let block = this.chain.mineBlock([
+      Tx.contractCall(contractName, 'unlist', [
+        types.principal(nftAsset),
+        types.uint(nftId)
+      ], seller.address)
+    ])
     let [receipt] = block.receipts
     return receipt;
   }
