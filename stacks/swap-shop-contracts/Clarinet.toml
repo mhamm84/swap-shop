@@ -22,11 +22,11 @@ depends_on = ["nft-trait"]
 
 [contracts.swap-shop-commission]
 path = "contracts/swap-shop-commission.clar"
-depends_on = []
+depends_on = ["swap-shop-commission-trait"]
 
 [contracts.swap-shop-commission-noop]
 path = "contracts/swap-shop-commission-noop.clar"
-depends_on = []
+depends_on = ["swap-shop-commission-trait"]
 
 [contracts.swap-shop-commission-trait]
 path = "contracts/swap-shop-commission-trait.clar"

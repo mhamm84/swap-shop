@@ -2,4 +2,5 @@
 settings/Mainnet.toml
 settings/Testnet.toml
 history.txt
-reports/**
+reports/
+coverage.lcov

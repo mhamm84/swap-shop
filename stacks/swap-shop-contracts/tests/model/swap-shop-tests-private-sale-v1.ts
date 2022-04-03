@@ -35,7 +35,7 @@ export const createListingDetails = (listing: ListingDetails) =>
     'expiry': types.uint(listing.expiry),
     'nftId': types.uint(listing.nftId),
     'price': types.uint(listing.price),
-  });
+  })
 
 
 export class PrivateSale {
@@ -48,28 +48,30 @@ export class PrivateSale {
     this.deployer = deployer
   }
 
-  createListing(seller: Account, nftAsset: string, listingDetails: any) {
+  createListing(seller: Account, nftAsset: string, commission: string, listingDetails: any) {
 
     let listing = createListingDetails(listingDetails)
     let block = this.chain.mineBlock([
       Tx.contractCall(contractName, 'create-listing', [ 
               types.principal(nftAsset),
+              types.principal(Utils.qualifiedName(commission)),
               listing
           ], seller.address)
     ]);
     let [receipt] = block.receipts
-    return receipt;
+    return receipt
   }
 
-  purchase(buyer: Account, nftAsset: string, nftId: number) {
+  purchase(buyer: Account, nftAsset: string, commission: string, nftId: number) {
     let block = this.chain.mineBlock([
       Tx.contractCall(contractName, 'purchase', [
         types.principal(nftAsset),
+        types.principal(Utils.qualifiedName(commission)),
         types.uint(nftId)
       ], buyer.address)
     ])
     let [receipt] = block.receipts
-    return receipt;
+    return receipt
   }
 
   unlist(seller: Account, nftAsset: string, nftId: number) {
@@ -80,7 +82,24 @@ export class PrivateSale {
       ], seller.address)
     ])
     let [receipt] = block.receipts
-    return receipt;
+    return receipt
+  }
+
+  adminAddCommission(user: Account, commission: string, enabled: boolean) {
+    let block = this.chain.mineBlock([
+      Tx.contractCall(contractName, 'admin-add-commission', [
+        types.principal(Utils.qualifiedName(commission)),
+        types.bool(enabled)
+      ], user.address)
+    ])
+    let [receipt] = block.receipts
+    return receipt
+  }
+
+  isCommissionEnabled(user: Account, commission: string) {
+    return this.chain.callReadOnlyFn(contractName, "is-commission-enabled", [
+      types.principal(Utils.qualifiedName(commission))
+    ], user.address)
   }
 
   adminAddToWhitelist(user: Account, nftAsset: string) {
@@ -88,26 +107,24 @@ export class PrivateSale {
       Tx.contractCall(contractName, "admin-add-nft-asset-to-whitelist", [
         types.principal(Utils.qualifiedName(nftAsset))
       ], user.address)
-    ]);
+    ])
     let [receipt] = block.receipts
-    return receipt;
+    return receipt
   }
 
   isWhitelisted(user: Account, nftAsset: string) {
     return this.chain.callReadOnlyFn(contractName, "is-whitelisted", [
       types.principal(Utils.qualifiedName(nftAsset))
-    ], user.address
-    );
+    ], user.address)
   }
 
   adminUpdateInWhitelist(user: Account, nftAsset: string, flag: boolean) {
-    let nftAssetPrincipal = types.principal(Utils.qualifiedName(nftAsset))
     let block = this.chain.mineBlock([
       Tx.contractCall(contractName, "admin-update-nft-asset-in-whitelist", [
-        nftAssetPrincipal,
+        types.principal(Utils.qualifiedName(nftAsset)),
         types.bool(flag)
       ], user.address)
-    ]);
+    ])
     let [receipt] = block.receipts
     return receipt
   }
@@ -118,8 +135,8 @@ export class PrivateSale {
       Tx.contractCall(contractName, "admin-set-contract-owner", [
         types.principal(newOwner.address),
       ], user.address)
-    ]);
-    return block.receipts[0];
+    ])
+    return block.receipts[0]
   }
   
 }

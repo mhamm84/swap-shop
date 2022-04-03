@@ -6,7 +6,7 @@
 ;; price - the price of the listing
 (define-public (pay (price uint))
     (begin  
-        (asserts! (>= price u0) (err ERR_PRICE_INVALID))
+        (asserts! (> price u0) (err ERR_PRICE_INVALID))
         (ok (try! (stx-transfer? (/ price (var-get slice)) tx-sender (var-get recipient))))
     )
 )

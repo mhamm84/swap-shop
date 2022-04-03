@@ -19,10 +19,20 @@ export class Commission {
     this.deployer = deployer
   }
 
-  changeOwner(deployer:Account, owner : string) {
+  changeRecipient(deployer:Account, recipient : string) {
     let block = this.chain.mineBlock([
       Tx.contractCall(contractName, 'change-recipient',[
-        types.principal(owner),
+        types.principal(recipient),
+      ], deployer.address)
+    ])
+    let [receipt] = block.receipts
+    return receipt;
+  }
+
+  changeCommission(deployer:Account, newCommissionSlice : number) {
+    let block = this.chain.mineBlock([
+      Tx.contractCall(contractName, 'change-commission',[
+        types.uint(newCommissionSlice),
       ], deployer.address)
     ])
     let [receipt] = block.receipts

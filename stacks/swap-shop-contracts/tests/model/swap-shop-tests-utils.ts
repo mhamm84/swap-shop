@@ -71,7 +71,6 @@ export const mintNft = (minter: NftMinter) => {
     ]);
     block.receipts[0].result.expectOk();
     const nftMintEvent = block.receipts[0].events[0].nft_mint_event;
-    console.log(nftMintEvent)
     const [nftAsset, nftAssetId] = nftMintEvent.asset_identifier.split('::');
     const mintDetails = { nftAsset: nftAsset, nftAssetId: nftAssetId, tokenId: nftMintEvent.value.substr(1), block }
     return mintDetails

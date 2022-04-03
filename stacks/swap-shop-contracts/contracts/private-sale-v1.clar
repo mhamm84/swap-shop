@@ -11,7 +11,7 @@
 
 ;; DEV - SIP010 - nft-trait
 (use-trait nft-trait .nft-trait.nft-trait)
-(use-trait commission .swap-shop-commission-trait.commission)
+(use-trait commission-trait .swap-shop-commission-trait.commission)
 
 ;; P U B L I C 
 
@@ -19,9 +19,11 @@
 
 ;; The sender lists an nft avaiable for sale at a set price for a set buyer
 ;; The listing has an expiry on it which is the block height of the stacks blockchain in  the future
-(define-public  (create-listing (nft-asset <nft-trait>) (listing-details {nftId: uint, buyer: principal, price: uint, expiry: uint}))
+(define-public  (create-listing (nft-asset <nft-trait>) (comm <commission-trait>) (listing-details {nftId: uint, buyer: principal, price: uint, expiry: uint}))
     (begin
         (asserts! (is-whitelisted nft-asset) (err ERR_NOT_WHITELISTED))
+        (asserts! (is-commission-enabled comm) (err ERR_INVALID_COMMISSION))
+
         (asserts! (> (get nftId listing-details) u0) (err ERR_NFT_ID_INVALID))
         (asserts! (> (get price listing-details) u0) (err ERR_PRICE_TOO_LOW))
         (asserts! (> (get expiry listing-details) block-height) (err ERR_EXPIRY_IN_PAST))
@@ -30,6 +32,7 @@
                 (
                     (owner (unwrap! (get-owner nft-asset (get nftId listing-details)) (err ERR_NFT_OWNER_NOT_FOUND)))
                     (nft-contract (contract-of nft-asset))
+                    (listing-comm (contract-of comm))
                     (listing-id (+ u1 (var-get next-listing-id)))
                 )
                 
@@ -41,6 +44,7 @@
                         nftId: (get nftId listing-details),
                         buyer: (get buyer listing-details),
                         price: (get price listing-details),
+                        commission: (contract-of comm),
                         expiry: (get expiry listing-details),
                     }
                 )
@@ -71,7 +75,7 @@
     )
 )
 
-(define-public (purchase (nft-asset <nft-trait>) (listing-id uint) ) 
+(define-public (purchase (nft-asset <nft-trait>) (comm <commission-trait>) (listing-id uint) ) 
     (begin 
         (let 
             (
@@ -82,13 +86,16 @@
                 (listing-expiry (get expiry listing))
                 (listing-nft-contract (get nftContract listing))
                 (listing-nft-id (get nftId listing))
+                (listing-commission (get commission listing))
             )
             (asserts! (is-eq tx-sender listing-buyer) (err ERR_TX_SENDER_NOT_OWNER))
             (asserts! (> listing-expiry  block-height) (err ERR_LISTING_EXPIRED))
             (asserts! (is-eq (contract-of nft-asset) listing-nft-contract) (err ERR_INCORRECT_NFT_ASSET))
-
+            (asserts! (is-eq listing-commission (contract-of comm)) (err ERR_INVALID_COMMISSION))
+            
             (try! (as-contract (contract-call? nft-asset transfer listing-nft-id tx-sender listing-buyer)))
-            (try! (stx-transfer? listing-price tx-sender listing-owner ))
+            (try! (stx-transfer? listing-price tx-sender listing-owner))
+            (try! (contract-call? comm pay listing-price))
             ;; #[filter(listing)]
             (print-listing "purchase" listing)
             (ok true)
@@ -116,7 +123,21 @@
     )
 )
 
+(define-public (admin-add-commission (comm <commission-trait>) (enabled bool))
+    (begin  
+        (asserts! (has-role ROLE_WHITELIST_ADMIN tx-sender) (err ERR_UNAUTHORIZED))
+        ;; #[filter(comm, enabled)]
+        (ok (map-set commissions (contract-of comm) enabled))
+    )
+)
+
 ;; R E A D  O N L Y
+
+;; find-commission
+(define-read-only (is-commission-enabled (comm <commission-trait>))
+    (default-to false (map-get? commissions (contract-of comm)))
+    
+)   
 
 ;; is-whitelisted
 (define-read-only (is-whitelisted (nft-asset <nft-trait>))
@@ -151,6 +172,7 @@
                         nftId: uint,
                         buyer: principal,
                         price: uint,
+                        commission: principal,
                         expiry: uint}))
     (print { type: "nft-private-sale", action: action, data: { listing: (get owner listing)}})
 )
@@ -178,7 +200,8 @@
         nftId: uint,
         buyer: principal,
         price: uint,
-        expiry: uint
+        commission: principal,
+        expiry: uint,
     }
 )
 
@@ -204,11 +227,15 @@
 (define-constant ERR_TX_SENDER_NOT_BUYER u1012)
 (define-constant ERR_TX_SENDER_NOT_DEPLOYER u1013)
 (define-constant ERR_INVALID_LISTING_ID u1014)
+(define-constant ERR_INVALID_COMMISSION u1015)
 
-;; ROLES
+;; R O L E S
 (define-constant ROLE_WHITELIST_ADMIN u1)
 
 (map-insert roles {role: ROLE_WHITELIST_ADMIN, account: contract-owner} {allowed: true})
+
+;; C O M M I S S I O N S
+(map-insert commissions 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.swap-shop-commission true)
 
 ;; W H I T E  L I S T
 
