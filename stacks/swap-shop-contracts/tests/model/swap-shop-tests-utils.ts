@@ -48,7 +48,7 @@ export function assertNftTransfer(event: Sip009NftTransferEvent, nftAssetContrac
 //         nft_transfer_event: {
 //           asset_identifier: "ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sip009-nft::swap-nft",
 //           sender: "ST1SJ3DTE5DN7X54YDH5D64R3BCB6A2AG2ZQ8YPD5",
-//           recipient: "ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.private-sale-v1",
+//           recipient: "ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.swap-shop-private-sale-v1",
 //           value: "u1"
 //         }
 //       }

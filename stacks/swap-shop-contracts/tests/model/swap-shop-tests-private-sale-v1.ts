@@ -7,10 +7,10 @@ import {
 
 import * as Utils from './swap-shop-tests-utils.ts';
 
-const contractName = 'private-sale-v1'
+const contractName = 'swap-shop-private-sale-v1'
 
 // (define-public (list-nft (nft-asset <nft-trait>) (listing-details {nft-id: uint, buyer: principal, price: uint, listing-expiry: uint}))
-// (contract-call? .private-sale-v1 list-nft 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sip009-nft {buyer: tx-sender, listing-expiry: u5, nft-id: u1, price: u10000000})
+// (contract-call? .swap-shop-private-sale-v1 list-nft 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sip009-nft {buyer: tx-sender, listing-expiry: u5, nft-id: u1, price: u10000000})
 
 export type ListingDetails = {
   nftId: number,

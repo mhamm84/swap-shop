@@ -5,7 +5,7 @@ import { PrivateSale } from './model/swap-shop-tests-private-sale-v1.ts'
 import * as Utils from './model/swap-shop-tests-utils.ts'
 
 //  C O N S T A N T S
-const contractName = 'private-sale-v1'
+const contractName = 'swap-shop-private-sale-v1'
 const defaultNftAssetContract = 'sip009-nft'
 const commissionContract = 'swap-shop-commission'
 const contractPrincipal = (deployer: Account) => `${deployer.address}.${contractName}`

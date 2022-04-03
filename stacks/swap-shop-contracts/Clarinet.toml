@@ -12,8 +12,8 @@ depends_on = []
 path = "contracts/nft-trait.clar"
 depends_on = []
 
-[contracts.private-sale-v1]
-path = "contracts/private-sale-v1.clar"
+[contracts.swap-shop-private-sale-v1]
+path = "contracts/swap-shop-private-sale-v1.clar"
 depends_on = ["nft-trait", "swap-shop-commission-trait"]
 
 [contracts.sip009-nft]

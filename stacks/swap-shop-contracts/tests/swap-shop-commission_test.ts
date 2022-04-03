@@ -4,7 +4,7 @@ import { Commission } from './model/swap-shop-commission-tests.ts';
 import * as Utils from './model/swap-shop-tests-utils.ts';
 
 //  C O N S T A N T S
-const contractName = 'private-sale-v1';
+const contractName = 'swap-shop-private-sale-v1';
 const defaultNftAssetContract = 'sip009-nft';
 
 Clarinet.test({

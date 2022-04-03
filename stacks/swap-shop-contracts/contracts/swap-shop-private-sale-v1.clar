@@ -1,4 +1,4 @@
-;; private-sale-v1
+;; swap-shop-private-sale-v1
 ;; <add a description here>
 
 ;; S I P 0 0 9 - N F T
