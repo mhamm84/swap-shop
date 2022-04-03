@@ -25,8 +25,6 @@ export interface Sip009NftTransferEvent {
 export function assertNftTransfer(event: Sip009NftTransferEvent, nftAssetContract: string, tokenId: number, sender: string, recipient: string) {
 	assertEquals(typeof event, 'object');
 	assertEquals(event.type, 'nft_transfer_event');
-    console.log("event.nft_transfer_event.asset_identifier:" + event.nft_transfer_event.asset_identifier)
-    console.log("nftAssetContract: " + nftAssetContract)
 	assertEquals(event.nft_transfer_event.asset_identifier.substr(0, nftAssetContract.length), nftAssetContract);
 	event.nft_transfer_event.sender.expectPrincipal(sender);
 	event.nft_transfer_event.recipient.expectPrincipal(recipient);

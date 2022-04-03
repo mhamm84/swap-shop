@@ -7,12 +7,13 @@ import * as Utils from './model/swap-shop-tests-utils.ts';
 //  C O N S T A N T S
 const contractName = 'swap-shop-private-sale-v1'
 const defaultNftAssetContract = 'sip009-nft'
-const commissionContractPrincipal = 'swap-shop-commission'
+const commissionContract = 'swap-shop-commission'
 const contractPrincipal = (deployer: Account) => `${deployer.address}.${contractName}`
+const defaultCommissionSlice = 100
 
 
 Clarinet.test({
-    name: "create-listing",
+    name: "list an nft for sale",
     async fn(chain: Chain, accounts: Map<string, Account>) {
         const [deployer, seller, buyer] = ['deployer', 'wallet_1', 'wallet_2'].map(name => accounts.get(name)!)
         let privateSale = new PrivateSale(chain, deployer)
@@ -27,7 +28,7 @@ Clarinet.test({
 		const { nftAsset, tokenId } = Utils.mintNft(minter);
         
         //>>>>> LIST >>>>>>
-        const receipt = privateSale.createListing(seller, nftAsset, commissionContractPrincipal, {buyer: buyer.address, expiry: 5, nftId: tokenId, price: listPrice})
+        const receipt = privateSale.createListing(seller, nftAsset, commissionContract, {buyer: buyer.address, expiry: 5, nftId: tokenId, price: listPrice})
         receipt.result.expectOk().expectUint(tokenId)
         const listingId = receipt.result.expectOk().expectUint(1)
 
@@ -40,7 +41,7 @@ Clarinet.test({
 });
 
 Clarinet.test({
-    name: "list-nft-multiple",
+    name: "list multiple nfts for sale",
     async fn(chain: Chain, accounts: Map<string, Account>) {
         const [deployer, seller, buyer] = ['deployer', 'wallet_1', 'wallet_2'].map(name => accounts.get(name)!)
         let privateSale = new PrivateSale(chain, deployer)
@@ -59,7 +60,7 @@ Clarinet.test({
         assertEquals(mintDetails2.tokenId, '2', "mint should have an id of 2")
         
         //>>>>> LIST >>>>>> 1
-        const receipt = privateSale.createListing(seller, mintDetails1.nftAsset, commissionContractPrincipal, {buyer: buyer.address, expiry: 5, nftId: mintDetails1.tokenId, price: listPrice})
+        const receipt = privateSale.createListing(seller, mintDetails1.nftAsset, commissionContract, {buyer: buyer.address, expiry: 5, nftId: mintDetails1.tokenId, price: listPrice})
         receipt.result.expectOk().expectUint(mintDetails1.tokenId)
         const listingId = receipt.result.expectOk().expectUint(1)
 
@@ -70,7 +71,7 @@ Clarinet.test({
 
 
         //>>>>> LIST >>>>>> 2
-        const receipt2 = privateSale.createListing(seller, mintDetails2.nftAsset, commissionContractPrincipal, {buyer: buyer.address, expiry: 10, nftId: mintDetails2.tokenId, price: listPrice})
+        const receipt2 = privateSale.createListing(seller, mintDetails2.nftAsset, commissionContract, {buyer: buyer.address, expiry: 10, nftId: mintDetails2.tokenId, price: listPrice})
         receipt2.result.expectOk().expectUint(mintDetails2.tokenId)
         const listingId2 = receipt2.result.expectOk().expectUint(2)
 
@@ -82,7 +83,7 @@ Clarinet.test({
 });
 
 Clarinet.test({
-    name: "list-nft-not-whitelisted",
+    name: "list an nft for sale which is not whitelisted",
     async fn(chain: Chain, accounts: Map<string, Account>) {
         const [deployer, seller, buyer] = ['deployer', 'wallet_1', 'wallet_2'].map(name => accounts.get(name)!)
         const privateSale = new PrivateSale(chain, deployer)
@@ -93,14 +94,14 @@ Clarinet.test({
 		const { nftAsset, nftAssetId, tokenId } = Utils.mintNft(minter)
 
         //>>>>> LIST >>>>>>
-        const receipt = privateSale.createListing(seller, nftAsset, commissionContractPrincipal, {buyer: buyer.address, expiry: 5, nftId: tokenId, price: listPrice})
+        const receipt = privateSale.createListing(seller, nftAsset, commissionContract, {buyer: buyer.address, expiry: 5, nftId: tokenId, price: listPrice})
         receipt.result.expectErr().expectUint(1004)
 
     },
 });
 
 Clarinet.test({
-    name: "list-nft-invalid-nft-id",
+    name: "list an nft for sale with an invalid nft id",
     async fn(chain: Chain, accounts: Map<string, Account>) {
         const [deployer, seller, buyer] = ['deployer', 'wallet_1', 'wallet_2'].map(name => accounts.get(name)!);
         const privateSale = new PrivateSale(chain, deployer)
@@ -115,14 +116,14 @@ Clarinet.test({
 		const { nftAsset, nftAssetId, tokenId } = Utils.mintNft(minter);
         
         //>>>>> LIST >>>>>>
-        const receipt = privateSale.createListing(seller, nftAsset, commissionContractPrincipal, {buyer: buyer.address, expiry: 5, nftId: 0, price: listPrice})
+        const receipt = privateSale.createListing(seller, nftAsset, commissionContract, {buyer: buyer.address, expiry: 5, nftId: 0, price: listPrice})
         receipt.result.expectErr().expectUint(1000)
     },
 });
 
 
 Clarinet.test({
-    name: "list-nft-listing-expiry-in-past",
+    name: "list an nft for sale where the expiry is in the past",
     async fn(chain: Chain, accounts: Map<string, Account>) {
         const [deployer, seller, buyer] = ['deployer', 'wallet_1', 'wallet_2'].map(name => accounts.get(name)!)
         const privateSale = new PrivateSale(chain, deployer)
@@ -139,13 +140,13 @@ Clarinet.test({
         chain.mineEmptyBlock(10)
 
         //>>>>> LIST >>>>>>
-        const receipt = privateSale.createListing(seller, nftAsset, commissionContractPrincipal, {buyer: buyer.address, expiry: 5, nftId: tokenId, price: listPrice})
+        const receipt = privateSale.createListing(seller, nftAsset, commissionContract, {buyer: buyer.address, expiry: 5, nftId: tokenId, price: listPrice})
         receipt.result.expectErr().expectUint(1006)
     },
 });
 
 Clarinet.test({
-    name: "list-nft-not-found",
+    name: "list an nft for sale which does not exist",
     async fn(chain: Chain, accounts: Map<string, Account>) {
         const [deployer, seller, buyer] = ['deployer', 'wallet_1', 'wallet_2'].map(name => accounts.get(name)!);
         const privateSale = new PrivateSale(chain, deployer)
@@ -160,13 +161,13 @@ Clarinet.test({
 		const { nftAsset, nftAssetId, tokenId } = Utils.mintNft(minter)
 
         //>>>>> LIST >>>>>>
-        const receipt = privateSale.createListing(seller, nftAsset, commissionContractPrincipal, {buyer: buyer.address, expiry: 5, nftId: 10, price: listPrice})
+        const receipt = privateSale.createListing(seller, nftAsset, commissionContract, {buyer: buyer.address, expiry: 5, nftId: 10, price: listPrice})
         receipt.result.expectErr().expectUint(1002)
     },
 });
 
 Clarinet.test({
-    name: "list-nft-not-owned-by-seller",
+    name: "list an nft for sale which the seller does not own",
     async fn(chain: Chain, accounts: Map<string, Account>) {
         const [deployer, seller, buyer] = ['deployer', 'wallet_1', 'wallet_2'].map(name => accounts.get(name)!);
         const privateSale = new PrivateSale(chain, deployer)
@@ -181,13 +182,13 @@ Clarinet.test({
 		const { nftAsset, tokenId } = Utils.mintNft(minter);
         
         //>>>>> LIST >>>>>>
-        const receipt = privateSale.createListing(seller, nftAsset, commissionContractPrincipal, {buyer: buyer.address, expiry: 5, nftId: tokenId, price: listPrice})
+        const receipt = privateSale.createListing(seller, nftAsset, commissionContract, {buyer: buyer.address, expiry: 5, nftId: tokenId, price: listPrice})
         receipt.result.expectErr().expectUint(1001)
     },
 });
 
 Clarinet.test({
-    name: "unlist-nft",
+    name: "unlist a listing",
     async fn(chain: Chain, accounts: Map<string, Account>) {
         const [deployer, seller, buyer] = ['deployer', 'wallet_1', 'wallet_2'].map(name => accounts.get(name)!);
         let privateSale = new PrivateSale(chain, deployer)
@@ -202,7 +203,7 @@ Clarinet.test({
 		const { nftAsset, tokenId } = Utils.mintNft(minter);
         
         //>>>>> LIST >>>>>>
-        const receipt = privateSale.createListing(seller, nftAsset, commissionContractPrincipal, {buyer: buyer.address, expiry: 5, nftId: tokenId, price: listPrice})
+        const receipt = privateSale.createListing(seller, nftAsset, commissionContract, {buyer: buyer.address, expiry: 5, nftId: tokenId, price: listPrice})
         const listingId = receipt.result.expectOk().expectUint(1)
 
         //>>>>> CHECK EVENTS >>>>>>
@@ -223,7 +224,7 @@ Clarinet.test({
 });
 
 Clarinet.test({
-    name: "unlist-nft-not-owner-who-listed",
+    name: "unlist a listing with the wrong owner",
     async fn(chain: Chain, accounts: Map<string, Account>) {
         const [deployer, seller, buyer] = ['deployer', 'wallet_1', 'wallet_2'].map(name => accounts.get(name)!);
         let privateSale = new PrivateSale(chain, deployer)
@@ -238,7 +239,7 @@ Clarinet.test({
 		const { nftAsset, tokenId } = Utils.mintNft(minter);
         
         //>>>>> LIST >>>>>>
-        const receipt = privateSale.createListing(seller, nftAsset, commissionContractPrincipal, {buyer: buyer.address, expiry: 5, nftId: tokenId, price: listPrice})
+        const receipt = privateSale.createListing(seller, nftAsset, commissionContract, {buyer: buyer.address, expiry: 5, nftId: tokenId, price: listPrice})
         const listingId = receipt.result.expectOk().expectUint(1)
 
         //>>>>> CHECK EVENTS >>>>>>
@@ -257,7 +258,7 @@ Clarinet.test({
 });
 
 Clarinet.test({
-    name: "unlist-nft-no-listing",
+    name: "unlist a listing which does not exist",
     async fn(chain: Chain, accounts: Map<string, Account>) {
         const [deployer, seller, buyer] = ['deployer', 'wallet_1', 'wallet_2'].map(name => accounts.get(name)!);
         let privateSale = new PrivateSale(chain, deployer)
@@ -274,7 +275,7 @@ Clarinet.test({
 });
 
 Clarinet.test({
-    name: "purchase",
+    name: "purchase an nft from a seller",
     async fn(chain: Chain, accounts: Map<string, Account>) {
         const [deployer, seller, buyer] = ['deployer', 'wallet_1', 'wallet_2'].map(name => accounts.get(name)!);
         let privateSale = new PrivateSale(chain, deployer)
@@ -289,7 +290,7 @@ Clarinet.test({
 		const { nftAsset, nftAssetId, tokenId } = Utils.mintNft(minter);
         
         //>>>>> [SELLER] -> LIST >>>>>>
-        const receipt = privateSale.createListing(seller, nftAsset, commissionContractPrincipal, {buyer: buyer.address, expiry: 20, nftId: tokenId, price: listPrice})
+        const receipt = privateSale.createListing(seller, nftAsset, commissionContract, {buyer: buyer.address, expiry: 20, nftId: tokenId, price: listPrice})
         receipt.result.expectOk().expectUint(tokenId)
         const listingId = receipt.result.expectOk().expectUint(1)
 
@@ -297,17 +298,19 @@ Clarinet.test({
         checkListingResponse(chain, deployer, listingId, seller.address, nftAsset, tokenId, buyer.address, listPrice, 20)
 
         //>>>>> [BUYER] -> PURCHASE >>>>>>
-        const purchaseReceipt = privateSale.purchase(buyer, nftAsset, commissionContractPrincipal, listingId)
+        const purchaseReceipt = privateSale.purchase(buyer, nftAsset, commissionContract, listingId)
         purchaseReceipt.result.expectOk().expectBool(true)
 
         //>>>>> CHECK EVENTS >>>>>>
         Utils.assertNftTransfer(purchaseReceipt.events[0], nftAsset, tokenId, contractPrincipal(deployer), buyer.address)
         purchaseReceipt.events.expectSTXTransferEvent(listPrice, buyer.address, seller.address);
+        purchaseReceipt.events.expectSTXTransferEvent((listPrice/defaultCommissionSlice), buyer.address, deployer.address);
+
     },
 });
 
 Clarinet.test({
-    name: "confirm-sale-not-owner",
+    name: "purchase an nft from a seller using the wrong buyer",
     async fn(chain: Chain, accounts: Map<string, Account>) {
         const [deployer, seller, buyer] = ['deployer', 'wallet_1', 'wallet_2'].map(name => accounts.get(name)!);
         let privateSale = new PrivateSale(chain, deployer)
@@ -322,7 +325,7 @@ Clarinet.test({
 		const { nftAsset, tokenId } = Utils.mintNft(minter);
         
         //>>>>> [SELLER] -> LIST >>>>>>
-        const receipt = privateSale.createListing(seller, nftAsset, commissionContractPrincipal, {buyer: buyer.address, expiry: 20, nftId: tokenId, price: listPrice})
+        const receipt = privateSale.createListing(seller, nftAsset, commissionContract, {buyer: buyer.address, expiry: 20, nftId: tokenId, price: listPrice})
         receipt.result.expectOk().expectUint(tokenId)
         const listingId = receipt.result.expectOk().expectUint(1)
 
@@ -330,7 +333,7 @@ Clarinet.test({
         checkListingResponse(chain, deployer, listingId, seller.address, nftAsset, tokenId, buyer.address, listPrice, 20)
 
         //>>>>> [BUYER] -> PURCHASE >>>>>>
-        const purchaseReceipt = privateSale.purchase(seller, nftAsset, commissionContractPrincipal, listingId)
+        const purchaseReceipt = privateSale.purchase(seller, nftAsset, commissionContract, listingId)
         purchaseReceipt.result.expectErr().expectUint(1001)
 
         //>>>>> CHECK EVENTS >>>>>>
@@ -339,7 +342,7 @@ Clarinet.test({
 });
 
 Clarinet.test({
-    name: "confirm-sale-expired",
+    name: "purchase an nft from a seller where the listing has expired",
     async fn(chain: Chain, accounts: Map<string, Account>) {
         const [deployer, seller, buyer] = ['deployer', 'wallet_1', 'wallet_2'].map(name => accounts.get(name)!);
         let privateSale = new PrivateSale(chain, deployer)
@@ -354,7 +357,7 @@ Clarinet.test({
 		const { nftAsset, tokenId } = Utils.mintNft(minter);
         
         //>>>>> [SELLER] -> LIST >>>>>>
-        const receipt = privateSale.createListing(seller, nftAsset, commissionContractPrincipal, {buyer: buyer.address, expiry: 20, nftId: tokenId, price: listPrice})
+        const receipt = privateSale.createListing(seller, nftAsset, commissionContract, {buyer: buyer.address, expiry: 20, nftId: tokenId, price: listPrice})
         receipt.result.expectOk().expectUint(tokenId)
         const listingId = receipt.result.expectOk().expectUint(1)
 
@@ -364,7 +367,7 @@ Clarinet.test({
         chain.mineEmptyBlock(30)
 
         //>>>>> [BUYER] -> PURCHASE >>>>>>
-        const purchaseReceipt = privateSale.purchase(buyer, nftAsset, commissionContractPrincipal, listingId)
+        const purchaseReceipt = privateSale.purchase(buyer, nftAsset, commissionContract, listingId)
         purchaseReceipt.result.expectErr().expectUint(1010)
 
         //>>>>> CHECK EVENTS >>>>>>
@@ -373,7 +376,7 @@ Clarinet.test({
 });
 
 Clarinet.test({
-    name: "confirm-sale-wrong-nft-asset",
+    name: "purchase an nft from a seller where the nft asset is incorrect",
     async fn(chain: Chain, accounts: Map<string, Account>) {
         const [deployer, seller, buyer] = ['deployer', 'wallet_1', 'wallet_2'].map(name => accounts.get(name)!);
         let privateSale = new PrivateSale(chain, deployer)
@@ -388,7 +391,7 @@ Clarinet.test({
 		const { nftAsset, tokenId } = Utils.mintNft(minter);
         
         //>>>>> [SELLER] -> LIST >>>>>>
-        const receipt = privateSale.createListing(seller, nftAsset, commissionContractPrincipal,{buyer: buyer.address, expiry: 20, nftId: tokenId, price: listPrice})
+        const receipt = privateSale.createListing(seller, nftAsset, commissionContract,{buyer: buyer.address, expiry: 20, nftId: tokenId, price: listPrice})
         receipt.result.expectOk().expectUint(tokenId)
         const listingId = receipt.result.expectOk().expectUint(1)
 
@@ -396,7 +399,7 @@ Clarinet.test({
         checkListingResponse(chain, deployer, listingId, seller.address, nftAsset, tokenId, buyer.address, listPrice, 20)
 
         //>>>>> [BUYER] -> PURCHASE >>>>>>
-        const purchaseReceipt = privateSale.purchase(buyer, Utils.qualifiedName('its-a-rug'), commissionContractPrincipal, listingId)
+        const purchaseReceipt = privateSale.purchase(buyer, Utils.qualifiedName('its-a-rug'), commissionContract, listingId)
         if(purchaseReceipt === undefined) {
             assertEquals(true, true, 'confirmReceipt was was undefined as Runtime error thrown from contract')
         }

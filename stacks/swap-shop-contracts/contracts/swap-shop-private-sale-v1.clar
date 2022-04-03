@@ -3,27 +3,29 @@
 
 ;; S I P 0 0 9 - N F T
 
-;; MAINNET
+;; M A I N N E T
 ;; (use-trait nft 'SP2PABAF9FTAJYNFZH93XENAJ8FVY99RRM50D2JG9.nft-trait.nft-trait)
 
-;; TESTNET
+;; T E S T N E T
 ;; (impl-trait 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.nft-trait.nft-trait)
 
-;; DEV - SIP010 - nft-trait
+;; D E V
 (use-trait nft-trait .nft-trait.nft-trait)
+
+;; C O M M I S S I O N
 (use-trait commission-trait .swap-shop-commission-trait.commission)
 
 ;; P U B L I C 
 
-;; list-nft
+;; create-listing
 
 ;; The sender lists an nft avaiable for sale at a set price for a set buyer
 ;; The listing has an expiry on it which is the block height of the stacks blockchain in  the future
+;; The nft asset is transfered to the contract while listed
 (define-public  (create-listing (nft-asset <nft-trait>) (comm <commission-trait>) (listing-details {nftId: uint, buyer: principal, price: uint, expiry: uint}))
     (begin
         (asserts! (is-whitelisted nft-asset) (err ERR_NOT_WHITELISTED))
         (asserts! (is-commission-enabled comm) (err ERR_INVALID_COMMISSION))
-
         (asserts! (> (get nftId listing-details) u0) (err ERR_NFT_ID_INVALID))
         (asserts! (> (get price listing-details) u0) (err ERR_PRICE_TOO_LOW))
         (asserts! (> (get expiry listing-details) block-height) (err ERR_EXPIRY_IN_PAST))
@@ -44,7 +46,7 @@
                         nftId: (get nftId listing-details),
                         buyer: (get buyer listing-details),
                         price: (get price listing-details),
-                        commission: (contract-of comm),
+                        commission: listing-comm,
                         expiry: (get expiry listing-details),
                     }
                 )
