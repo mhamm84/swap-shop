@@ -1,4 +1,4 @@
-(impl-trait .swap-shop-commission-trait.commission)
+(impl-trait .traits.commission)
 
 ;; P U B L I C
 

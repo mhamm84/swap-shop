@@ -1,0 +1,40 @@
+[project]
+name = "swapshop"
+authors = []
+description = ""
+telemetry = false
+requirements = []
+boot_contracts = ["pox", "costs-v2", "bns"]
+
+[project.cache_location]
+path = ".requirements"
+[contracts.ft-noop]
+path = "contracts/util/ft-noop.clar"
+
+[contracts.nft-noop]
+path = "contracts/util/nft-noop.clar"
+
+[contracts.swapshop-commission]
+path = "contracts/swapshop-commission.clar"
+
+[contracts.swapshop-commission-noop]
+path = "contracts/swapshop-commission-noop.clar"
+
+[contracts.swapshop-v1]
+path = "contracts/swapshop-v1.clar"
+
+[contracts.traits]
+path = "contracts/traits.clar"
+
+[repl]
+costs_version = 2
+parser_version = 2
+
+[repl.analysis]
+passes = ["check_checker"]
+
+[repl.analysis.check_checker]
+strict = false
+trusted_sender = false
+trusted_caller = false
+callee_filter = false

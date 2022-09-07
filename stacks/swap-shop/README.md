@@ -65,14 +65,5 @@ clarient console
 
 ### admin - Add nft asset to whitelist
 ```
-(contract-call? .swap-shop-private-sale-v1 admin-add-to-whitelist 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sip009-nft)
-```
-
-### mint
-```
-(contract-call? .sip009-nft mint tx-sender)
-
-Events emitted
-{"type":"nft_mint_event","nft_mint_event":{"asset_identifier":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sip009-nft::swap-nft","recipient":"ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM","value":"u1"}}
-(ok true)
+(contract-call? .swapshop-v1 get-info)
 ```
