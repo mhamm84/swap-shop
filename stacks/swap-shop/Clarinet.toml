@@ -14,11 +14,23 @@ path = "contracts/util/ft-noop.clar"
 [contracts.nft-noop]
 path = "contracts/util/nft-noop.clar"
 
+[contracts.sip009-test]
+path = "contracts/sip009-test.clar"
+
 [contracts.swapshop-commission]
 path = "contracts/swapshop-commission.clar"
 
 [contracts.swapshop-commission-noop]
 path = "contracts/swapshop-commission-noop.clar"
+
+[contracts.swapshop-transfer-sip-009]
+path = "contracts/swapshop-transfer-sip-009.clar"
+
+[contracts.swapshop-transfer-sip-010]
+path = "contracts/swapshop-transfer-sip-010.clar"
+
+[contracts.swapshop-transfer-stx]
+path = "contracts/swapshop-transfer-stx.clar"
 
 [contracts.swapshop-v1]
 path = "contracts/swapshop-v1.clar"

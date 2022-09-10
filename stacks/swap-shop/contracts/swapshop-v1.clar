@@ -2,8 +2,15 @@
 ;; Author: Mark Hammond
 ;;
 ;; Overview:
-;;
-;; TODO
+;; The swapshop contract is a bespoke contract deployed for 2 user who engage in a deal to transfer assets with each other
+;; in a trustless deal. The deal specifics are hammered out off-chain and then when a deal is agreed upon by both parties
+;; a swapshop contract and be created and deployed onto the Stacks blockchain. Users have complete control over their assets
+;; they send to the contract. A timelock is provided, which is a future blockheight where a user can claim their assets.
+;; Before a deal can go through in the time window, both parties have to confrim the transactions involved to transfer assets.
+;; The transfering of assets is an atomic operation. All transfers succeed, else the deal fails
+
+;; ################ -> Templated areas of the contract
+
 
 ;; S I P 0 0 9 - N F T
 
@@ -18,32 +25,35 @@
 
 ;; D E V
 (use-trait ft-trait .traits.sip-010-trait)
+(use-trait nft-trait .traits.sip-009-trait)
 
 ;; D E A L  T R A I T S
+;;
 (use-trait executor-trait .traits.executor-trait) 
-(use-trait safe-trait .traits.swap-deal-trait)
+(use-trait swapshop-trait .traits.swapshop-trait)
 (use-trait commission-trait .traits.commission)
 
-(impl-trait .traits.swap-deal-trait)
+(impl-trait .traits.swapshop-trait)
 
 ;; P U B L I C 
+;;
+;; real-only function returning information on this contract
 
 (define-read-only (get-info)
     (ok {
         version: (get-version),
         dealers: (get-dealers),
-        deal: (get-deal-id)
+        last-deal-id: (get-deal-id)
     })
 )
 
 ;; P R I V A T E
-
+;;
 (define-private (get-version) VERSION)
-
 (define-private (get-dealers) (var-get dealers) )
-
 (define-private (get-deal-id) (var-get deal-id) )
 
+;; adds a dealer principal to the dealers list - internal only
 (define-private (add-dealer-internal (dealer principal)) 
     (let 
         (
@@ -53,35 +63,160 @@
     )
 )
 
-;; init function
+;; S T O R A G E
+;;
+;; contract deployer principal
+(define-constant SELF (as-contract tx-sender))
+;; version of the contract
+(define-constant VERSION "0.0.1")
+;; latest ID for a deal
+(define-data-var deal-id uint u0)
+;; dealers list for this contract - populated from init function
+(define-data-var dealers (list 2 principal) (list))
+;; ##############################################################################################################################
+;; the time lock for the dealers assets, on expiry, dealers can claim back
+(define-data-var time-lock uint block-height)
+;; ##############################################################################################################################
+
+(define-map dealer-map principal { assets-submitted: bool, confirmed-trade: bool, claimed: bool })
+
+;; status of the deal
+;; 1 = ACTIVE ; 2 = EXPIRED
+(define-data-var deal-status uint u1)
+
+;;
+(define-public (submit-deal)
+;; ##############################################################################################################################
+    (begin 
+        ;; Check the time-lock
+        (asserts! (<  block-height (var-get time-lock)) ERR_TIME_LOCK_EXCEEDED)
+        ;; Check dealer 1
+        (if (is-eq tx-sender dealer-1)
+           (begin
+                (let 
+                    (
+                        (dealer (unwrap-panic (map-get? dealer-map dealer-1)))
+                        (assets-submitted (get assets-submitted dealer))
+                    ) 
+                    (asserts! assets-submitted ERR_DEALER_ALREADY_SUBMITTED)
+                    (asserts! (is-ok (contract-call?  .sip009-test transfer u1 tx-sender (as-contract tx-sender))) ERR_DEALER_NFT_TRANSFER_FAILED)
+                    (asserts! (is-eq (map-set dealer-map dealer-1 (merge dealer {assets-submitted: true}))) ERR_DEALER_UPDATE_FAILED)
+                )
+           )
+           true
+        )
+        ;; Check dealer 2
+        (if (is-eq tx-sender dealer-2)
+           (begin
+                (let 
+                    (
+                        (dealer (unwrap-panic (map-get? dealer-map dealer-2)))
+                        (assets-submitted (get assets-submitted dealer))
+                    ) 
+                    (asserts! assets-submitted ERR_DEALER_ALREADY_SUBMITTED)
+                    (asserts! (is-ok (stx-transfer? u10000 tx-sender (as-contract tx-sender) )) ERR_DEALER_STX_TRANSFER_FAILED)
+                    (asserts! (is-eq (map-set dealer-map dealer-2 (merge dealer {assets-submitted: true}))) ERR_DEALER_UPDATE_FAILED)
+                )
+           )
+           true
+        )
+        (ok true)
+    )
+;; ##############################################################################################################################
+)
+
+;; confirm the trade per dealer and if both agree, complete the deal
+(define-public (confirm-trade) 
+    (begin  
+    
+        (ok true)
+    )
+)
+
+;; complete the deal and transfer the asssets
+(define-private (complete-deal)
+    (begin  
+    
+
+        (ok true)
+    )
+)
+
+(define-public (claim)
+    (begin 
+        (asserts! (>= block-height (var-get time-lock)) ERR_TIME_LOCK_NOT_REACHED)
+        (var-set deal-status u2)
+
+        (if (is-eq tx-sender dealer-1)
+           (begin
+                (let 
+                    (
+                        (dealer (unwrap-panic (map-get? dealer-map dealer-1)))
+                        (claimed (get claimed dealer))
+                    ) 
+                    (asserts! claimed ERR_DEALER_ALREADY_CLAIMED)
+                    (asserts! (is-ok (contract-call?  .sip009-test transfer u1 (as-contract tx-sender) tx-sender)) ERR_DEALER_NFT_TRANSFER_FAILED)
+                    (asserts! (is-eq (map-set dealer-map dealer-1 (merge dealer {claimed: true}))) ERR_DEALER_UPDATE_FAILED)
+                )
+           )
+           true
+        )
+        ;; Check dealer 2
+        (if (is-eq tx-sender dealer-2)
+           (begin
+                (let 
+                    (
+                        (dealer (unwrap-panic (map-get? dealer-map dealer-2)))
+                        (claimed (get claimed dealer))
+                    ) 
+                    (asserts! claimed ERR_DEALER_ALREADY_CLAIMED)
+                    (asserts! (is-ok (stx-transfer? u10000 (as-contract tx-sender) tx-sender)) ERR_DEALER_STX_TRANSFER_FAILED)
+                    (asserts! (is-eq (map-set dealer-map dealer-2 (merge dealer { claimed: true}))) ERR_DEALER_UPDATE_FAILED)
+                )
+           )
+           true
+        )
+        (ok true)
+    )
+)
+
+
+;; E R R O R S
+;;
+(define-constant ERR_TIME_LOCK_EXCEEDED (err u100))
+(define-constant ERR_TIME_LOCK_NOT_REACHED (err u101))
+
+(define-constant ERR_DEALER_NOT_SENDER (err u200))
+(define-constant ERR_DEALER_MAX_REACHED (err u201))
+(define-constant ERR_DEALER_ALREADY_SUBMITTED (err u202))
+(define-constant ERR_DEALER_ALREADY_CONFIRMED (err u203))
+(define-constant ERR_DEALER_ALREADY_CLAIMED (err u204))
+(define-constant ERR_DEALER_NFT_TRANSFER_FAILED (err u205))
+(define-constant ERR_DEALER_STX_TRANSFER_FAILED (err u206))
+(define-constant ERR_DEALER_FT_TRANSFER_FAILED (err u207))
+(define-constant ERR_DEALER_UPDATE_FAILED (err u208))
+
+
+;; D E A L E R S
+;; ##############################################################################################################################
+;; Dealer constants are dynamically added to the contract when a swapshop deal is setup. 
+;; The dealer-1 and dealer-2 principal addresses are injected it BEFORE the contract is programatically deployed to the blockchain
+(define-constant dealer-1 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM)
+(define-constant dealer-2 'ST1SJ3DTE5DN7X54YDH5D64R3BCB6A2AG2ZQ8YPD5)
+;; ##############################################################################################################################
+
+;; I N I T
+;;
+;; init function to add the dealers to an internal list for info purpuses
 (define-private (init (d (list 2 principal)) ) 
     (begin  
         (map add-dealer-internal d)
         (print {action:  "init of deal"})
     )
 )
-
-;; I N I T
+;; call init
 (init (list 
         dealer-1
         dealer-2
     )
 )
-
-;; S T O R A G E
-
-;; contract deployer principal
-(define-constant SELF (as-contract tx-sender))
-;; version of the contract
-(define-constant VERSION "0.0.1")
-
-;; latest ID for a deal
-(define-data-var deal-id uint u0)
-(define-data-var dealers (list 2 principal) (list))
-
-;; E R R O R S
-(define-constant ERR_DEALER_MAX_REACHED (err u100))
-
-;; D E A L E R S
-(define-constant dealer-1 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM)
-(define-constant dealer-2 'ST1SJ3DTE5DN7X54YDH5D64R3BCB6A2AG2ZQ8YPD5)

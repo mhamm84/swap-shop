@@ -1,12 +1,12 @@
-(define-trait swap-deal-trait
+(define-trait swapshop-trait
 	(
-		(get-info () (response {version: (string-ascii 20), dealers: (list 2 principal), deal: uint} uint))
+		(get-info () (response {version: (string-ascii 20), dealers: (list 2 principal), last-deal-id: uint} uint))
 	)
 )
 
 (define-trait executor-trait
 	(
-		(execute (<sip-010-trait> <sip-009-trait> (optional principal) (optional uint) (optional (buff 20))) (response bool uint))
+		(execute (<swapshop-trait> <sip-010-trait> <sip-009-trait> (optional principal) (optional uint) (optional (buff 20))) (response bool uint))
 	)
 )
 
