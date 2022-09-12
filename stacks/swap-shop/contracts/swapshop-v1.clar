@@ -42,16 +42,14 @@
 (define-read-only (get-info)
     (ok {
         version: (get-version),
-        dealers: (get-dealers),
-        last-deal-id: (get-deal-id)
+        dealers: (get-dealers)
     })
 )
 
 ;; P R I V A T E
 ;;
 (define-private (get-version) VERSION)
-(define-private (get-dealers) (var-get dealers) )
-(define-private (get-deal-id) (var-get deal-id) )
+(define-private (get-dealers) (var-get dealers))
 
 ;; adds a dealer principal to the dealers list - internal only
 (define-private (add-dealer-internal (dealer principal)) 
@@ -69,10 +67,12 @@
 (define-constant SELF (as-contract tx-sender))
 ;; version of the contract
 (define-constant VERSION "0.0.1")
-;; latest ID for a deal
-(define-data-var deal-id uint u0)
 ;; dealers list for this contract - populated from init function
 (define-data-var dealers (list 2 principal) (list))
+;; number of dealers
+(define-constant no-of-dealers u2)
+;; number of confirms, must be a confirm for each dealer for the deal to complete
+(define-data-var confirm-count uint u0)
 ;; ##############################################################################################################################
 ;; the time lock for the dealers assets, on expiry, dealers can claim back
 (define-data-var time-lock uint block-height)
@@ -128,16 +128,28 @@
 ;; confirm the trade per dealer and if both agree, complete the deal
 (define-public (confirm-trade) 
     (begin  
-    
-        (ok true)
-    )
-)
+        (asserts! (is-some (map-get? dealer-map tx-sender)) ERR_DEALER_NOT_FOUND)
+        (asserts! (not (is-eq (var-get confirm-count) no-of-dealers)) ERR_DEAL_ALREADY_CONFIRMED)
 
-;; complete the deal and transfer the asssets
-(define-private (complete-deal)
-    (begin  
-    
+        (let 
+            (
+                (dealer (unwrap-panic (map-get? dealer-map tx-sender)))
+            ) 
+            (asserts! (is-eq (map-set dealer-map tx-sender (merge dealer {confirmed-trade: true}))) ERR_DEALER_UPDATE_FAILED)
+            (var-set confirm-count (+ (var-get confirm-count) u1))
+        )
 
+        (if (is-eq (var-get confirm-count) no-of-dealers) 
+            (begin 
+                ;; dealer-1 -> dealer-2
+                (asserts! (is-ok (contract-call?  .sip009-test transfer u1 (as-contract tx-sender) dealer-1)) ERR_DEALER_NFT_TRANSFER_FAILED)
+
+                ;; dealer-2 -> dealer-1
+                (asserts! (is-ok (stx-transfer? u10000 (as-contract tx-sender) dealer-2)) ERR_DEALER_STX_TRANSFER_FAILED)
+
+            ) 
+            true
+        )
         (ok true)
     )
 )
@@ -151,12 +163,12 @@
            (begin
                 (let 
                     (
-                        (dealer (unwrap-panic (map-get? dealer-map dealer-1)))
+                        (dealer (unwrap-panic (map-get? dealer-map tx-sender)))
                         (claimed (get claimed dealer))
                     ) 
                     (asserts! claimed ERR_DEALER_ALREADY_CLAIMED)
                     (asserts! (is-ok (contract-call?  .sip009-test transfer u1 (as-contract tx-sender) tx-sender)) ERR_DEALER_NFT_TRANSFER_FAILED)
-                    (asserts! (is-eq (map-set dealer-map dealer-1 (merge dealer {claimed: true}))) ERR_DEALER_UPDATE_FAILED)
+                    (asserts! (is-eq (map-set dealer-map tx-sender (merge dealer {claimed: true}))) ERR_DEALER_UPDATE_FAILED)
                 )
            )
            true
@@ -195,6 +207,9 @@
 (define-constant ERR_DEALER_STX_TRANSFER_FAILED (err u206))
 (define-constant ERR_DEALER_FT_TRANSFER_FAILED (err u207))
 (define-constant ERR_DEALER_UPDATE_FAILED (err u208))
+(define-constant ERR_DEALER_NOT_FOUND (err u209))
+
+(define-constant ERR_DEAL_ALREADY_CONFIRMED (err u300))
 
 
 ;; D E A L E R S
