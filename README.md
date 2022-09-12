@@ -1,2 +1,2 @@
 # swap-shop
-NFT Stacks Swap - Trustless
+Stacks NFT Swap Shop
