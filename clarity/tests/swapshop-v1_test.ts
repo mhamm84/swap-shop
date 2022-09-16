@@ -79,5 +79,17 @@ Clarinet.test({
         const receipt2 = swapShop.submitDeal(dealer1, true)
         receipt2.result.expectErr().expectUint(202)
      }
+})
 
+Clarinet.test({
+    name: "submit-deal-no-asset-to-transfer",
+    async fn(chain: Chain, accounts: Map<string, Account>) {
+        const [deployer, dealer1, dealer2] = ['deployer', 'wallet_1', 'wallet_2'].map(name => accounts.get(name)!)
+
+        let swapShop = new SwapShop(chain, deployer)
+
+        const receipt = swapShop.submitDeal(dealer1, true)
+        receipt.result.expectErr().expectUint(205)
+
+     }
 })
