@@ -41,6 +41,9 @@
 
 (define-read-only (get-info)
     (ok {
+        deal-status: (get-deal-status),
+        confirmations: (get-confirm-count),
+        time-lock: (get-time-lock),
         version: (get-version),
         dealers: (get-dealers)
     })
@@ -50,13 +53,16 @@
 ;;
 (define-private (get-version) VERSION)
 (define-private (get-dealers) (var-get dealers))
-
+(define-private (get-deal-status) (var-get deal-status))
+(define-private (get-confirm-count) (var-get confirm-count))
+(define-private (get-time-lock) (var-get time-lock))
 ;; adds a dealer principal to the dealers list - internal only
 (define-private (add-dealer-internal (dealer principal)) 
     (let 
         (
             (new-dealers (unwrap! (as-max-len? (append (var-get dealers) dealer) u2) ERR_DEALER_MAX_REACHED))
         ) 
+        (map-set dealer-map dealer { assets-submitted: true, confirmed-trade: true, claimed: true })
         (ok (var-set dealers new-dealers))
     )
 )
@@ -66,7 +72,7 @@
 ;; contract deployer principal
 (define-constant SELF (as-contract tx-sender))
 ;; version of the contract
-(define-constant VERSION "0.0.1")
+(define-constant VERSION "v1")
 ;; dealers list for this contract - populated from init function
 (define-data-var dealers (list 2 principal) (list))
 ;; number of dealers
@@ -75,13 +81,12 @@
 (define-data-var confirm-count uint u0)
 ;; ##############################################################################################################################
 ;; the time lock for the dealers assets, on expiry, dealers can claim back
-(define-data-var time-lock uint block-height)
+(define-data-var time-lock uint u5)
 ;; ##############################################################################################################################
 ;; dealer map, storeing some flags on the dealers
 (define-map dealer-map principal { assets-submitted: bool, confirmed-trade: bool, claimed: bool })
-
 ;; status of the deal
-;; 1 = ACTIVE ; 2 = EXPIRED
+;; 1 = ACTIVE ; 2 = COMPLETE; 3 = EXPIRED
 (define-data-var deal-status uint u1)
 
 ;;
@@ -150,7 +155,8 @@
                 (asserts! (is-ok (contract-call?  .sip009-test transfer u1 (as-contract tx-sender) dealer-1)) ERR_DEALER_NFT_TRANSFER_FAILED)
                 ;; dealer-2 -> dealer-1
                 (asserts! (is-ok (stx-transfer? u10000 (as-contract tx-sender) dealer-2)) ERR_DEALER_STX_TRANSFER_FAILED)
-;; ##############################################################################################################################               
+;; ##############################################################################################################################  
+                (var-set deal-status u2)             
             ) 
             true
         )
@@ -161,7 +167,7 @@
 (define-public (claim)
     (begin 
         (asserts! (>= block-height (var-get time-lock)) ERR_TIME_LOCK_NOT_REACHED)
-        (var-set deal-status u2)
+        (var-set deal-status u3)
 
         ;; ##############################################################################################################################
         (if (is-eq tx-sender dealer-1)
@@ -225,8 +231,9 @@
 ;; ##############################################################################################################################
 ;; Dealer constants are dynamically added to the contract when a swapshop deal is setup. 
 ;; The dealer-1 and dealer-2 principal addresses are injected it BEFORE the contract is programatically deployed to the blockchain
-(define-constant dealer-1 'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM)
-(define-constant dealer-2 'ST1SJ3DTE5DN7X54YDH5D64R3BCB6A2AG2ZQ8YPD5)
+;; deployer ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
+(define-constant dealer-1 'ST1SJ3DTE5DN7X54YDH5D64R3BCB6A2AG2ZQ8YPD5)
+(define-constant dealer-2 'ST2CY5V39NHDPWSXMW9QDT3HC3GD6Q6XX4CFRK9AG)
 ;; ##############################################################################################################################
 
 ;; I N I T

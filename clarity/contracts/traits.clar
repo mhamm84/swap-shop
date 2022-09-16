@@ -1,6 +1,6 @@
 (define-trait swapshop-trait
 	(
-		(get-info () (response {version: (string-ascii 20), dealers: (list 2 principal)} uint))
+		(get-info () (response {deal-status: uint, confirmations: uint, time-lock: uint, version: (string-ascii 20), dealers: (list 2 principal)} uint))
 	)
 )
 
