@@ -21,10 +21,21 @@ There are obviously major drawbacks to all these approaches. In the first two, y
 
 A potential solution to perform a non-custodial private sale would be to utilize a multi-sig contract which has Alice and Bob as the signers on the contract and that any transfers have to be confirmed by both parties to execute the transactions involved. In this case, a transfer of Alice’s 3 NFT’s to Bob and a transaction sending Bob’s 5000 STX to Alice.
 
-### M U L T I  &nbsp; S I G
+### D E S I G N
+
+Inspiration taken from:
 https://github.com/Trust-Machines/multisafe
 
 The work by multisafe will be used as the framework of the Clarity contracts needed to implement a safe swap between parties. At a high level , a contract is initialized with the founding owners addresses and a threshold of confirmations needed to execute external executor smart contracts. Owners and thresholds can be updated by authorized principals. Transactions are submitted by owners and then are voted on by the owners to execute the smart contracts referenced by the transaction when the threshold is reached.
+
+Also:
+https://neoswap.ai/
+
+This is a very cool app where multiple users can join a party, select the NFT's they wish to trade and the price they would like for them and bid on others NFT's in the party. The NeoSwap AI matches the best trades for everyone and everyone then signs the smartcontract which was created for the multi swap. 
+
+### C O N T R A C T
+
+I really like the approach taken by neoswap to create a custom contract for each swap part. It makes the contract a lot easyier to write and reason with. It does add complexity in regard to off-chain software where a template needs to be created for a deal and then deployed, but I think incorperating parts of both multisafe and neoswap would be a great outcome for the project
 
 ### T I M E  L O C K
 One issue straight away is what happens if the other person disappears. For example, if Alice sends her 3 NFT’s to the multi-sig contract they stuck there if Bob does not work with Alice to complete the transaction. Same with Bob sending the 5000 STX, Alice could disappear and the STX are stuck. A way around this is to enable each party to claim back their assets after a certain amount of time has passed. This way if the time lock is set for ~ 24 hours and the sale is not completed for in that time, Alice, Bob or both can send through a claim transaction to send them back their asset(s)
