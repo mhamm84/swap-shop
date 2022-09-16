@@ -63,7 +63,7 @@
         (
             (new-dealers (unwrap! (as-max-len? (append (var-get dealers) dealer) u2) ERR_DEALER_MAX_REACHED))
         ) 
-        (map-set dealer-map dealer { assets-submitted: true, confirmed-trade: true, claimed: true })
+        (map-set dealer-map dealer { assets-submitted: false, confirmed-trade: false, claimed: false })
         (ok (var-set dealers new-dealers))
     )
 )
@@ -105,7 +105,7 @@
                         (dealer (unwrap-panic (map-get? dealer-map dealer-1)))
                         (assets-submitted (get assets-submitted dealer))
                     ) 
-                    (asserts! assets-submitted ERR_DEALER_ALREADY_SUBMITTED)
+                    (asserts! (is-eq assets-submitted false) ERR_DEALER_ALREADY_SUBMITTED)
 ;; ##############################################################################################################################               
                     (asserts! (is-ok (contract-call?  .sip009-test transfer u1 tx-sender (as-contract tx-sender))) ERR_DEALER_NFT_TRANSFER_FAILED)
 ;; ##############################################################################################################################                                   

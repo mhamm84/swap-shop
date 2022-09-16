@@ -38,13 +38,11 @@ Clarinet.test({
 
 
 Clarinet.test({
-    name: "mint",
+    name: "sumbit-deal",
     async fn(chain: Chain, accounts: Map<string, Account>) {
         const [deployer, dealer1, dealer2] = ['deployer', 'wallet_1', 'wallet_2'].map(name => accounts.get(name)!)
 
         let swapShop = new SwapShop(chain, deployer)
-
-        chain
 
         //>>>>> MINT >>>>>>
         const minter = {chain: chain, deployer: deployer, recipient: dealer1, nftAsset: defaultNftAssetContract}
@@ -58,28 +56,28 @@ Clarinet.test({
         Utils.assertNftTransfer(receipt.events[0], mint1.nftAsset, mint1.tokenId, dealer1.address, contractPrincipal(deployer))
 
      }
-
 })
 
 Clarinet.test({
-    name: "Ensure that <...>",
+    name: "submit-deal-twice",
     async fn(chain: Chain, accounts: Map<string, Account>) {
-        let block = chain.mineBlock([
-            /* 
-             * Add transactions with: 
-             * Tx.contractCall(...)
-            */
-        ]);
-        assertEquals(block.receipts.length, 0);
-        assertEquals(block.height, 2);
+        const [deployer, dealer1, dealer2] = ['deployer', 'wallet_1', 'wallet_2'].map(name => accounts.get(name)!)
 
-        block = chain.mineBlock([
-            /* 
-             * Add transactions with: 
-             * Tx.contractCall(...)
-            */
-        ]);
-        assertEquals(block.receipts.length, 0);
-        assertEquals(block.height, 3);
-    },
-});
+        let swapShop = new SwapShop(chain, deployer)
+
+        //>>>>> MINT >>>>>>
+        const minter = {chain: chain, deployer: deployer, recipient: dealer1, nftAsset: defaultNftAssetContract}
+		const mint1 = Utils.mintNft(minter)
+        console.log("nft create - id: " + mint1.tokenId)
+
+        const receipt = swapShop.submitDeal(dealer1, true)
+        receipt.result.expectOk()
+
+        // >> CHECK TRANSFER
+        Utils.assertNftTransfer(receipt.events[0], mint1.nftAsset, mint1.tokenId, dealer1.address, contractPrincipal(deployer))
+
+        const receipt2 = swapShop.submitDeal(dealer1, true)
+        receipt2.result.expectErr().expectUint(202)
+     }
+
+})
