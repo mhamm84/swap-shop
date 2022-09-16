@@ -56,6 +56,7 @@
 (define-private (get-deal-status) (var-get deal-status))
 (define-private (get-confirm-count) (var-get confirm-count))
 (define-private (get-time-lock) (var-get time-lock))
+
 ;; adds a dealer principal to the dealers list - internal only
 (define-private (add-dealer-internal (dealer principal)) 
     (let 
@@ -95,6 +96,7 @@
     (begin 
         ;; Check the time-lock
         (asserts! (<  block-height (var-get time-lock)) ERR_TIME_LOCK_EXCEEDED)
+        (asserts! (is-some (map-get? dealer-map tx-sender)) ERR_DEALER_NOT_FOUND)
         ;; Check dealer 1
         (if (is-eq tx-sender dealer-1)
            (begin

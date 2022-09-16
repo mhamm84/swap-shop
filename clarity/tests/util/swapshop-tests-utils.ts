@@ -17,3 +17,36 @@ export const mintNft = (minter: NftMinter) => {
     const [nftAsset, nftAssetId] = nftMintEvent.asset_identifier.split('::');
     return { nftAsset: nftAsset, nftAssetId: nftAssetId, tokenId: nftMintEvent.value.substr(1), block }
 }
+
+
+/**
+ * [
+        {
+            type: "nft_transfer_event",
+            nft_transfer_event: {
+            asset_identifier: "ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sip009-test::swapshop-test-nft",
+            sender: "ST1SJ3DTE5DN7X54YDH5D64R3BCB6A2AG2ZQ8YPD5",
+            recipient: "ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.swapshop-v1",
+            value: "u1"
+            }
+        }
+    ]
+ */
+export interface Sip009NftTransferEvent {
+	type: string,
+	nft_transfer_event: {
+		asset_identifier: string,
+		sender: string,
+		recipient: string,
+		value: string
+	}
+}
+
+export function assertNftTransfer(event: Sip009NftTransferEvent, nftAssetContract: string, tokenId: number, sender: string, recipient: string) {
+	assertEquals(typeof event, 'object');
+	assertEquals(event.type, 'nft_transfer_event');
+	assertEquals(event.nft_transfer_event.asset_identifier.substr(0, nftAssetContract.length), nftAssetContract);
+	event.nft_transfer_event.sender.expectPrincipal(sender);
+	event.nft_transfer_event.recipient.expectPrincipal(recipient);
+	event.nft_transfer_event.value.expectUint(tokenId);
+}
