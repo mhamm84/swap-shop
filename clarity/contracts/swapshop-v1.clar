@@ -63,7 +63,7 @@
         (
             (new-dealers (unwrap! (as-max-len? (append (var-get dealers) dealer) u2) ERR_DEALER_MAX_REACHED))
         ) 
-        (map-set dealer-map dealer { assets-submitted: false, confirmed-trade: false, claimed: false })
+        (map-set dealer-map dealer { assets-submitted: false, confirmed-trade: false, claimed: true })
         (ok (var-set dealers new-dealers))
     )
 )
@@ -126,7 +126,7 @@
  ;; ##############################################################################################################################                                  
                     (asserts! (is-ok (stx-transfer? u10000 tx-sender (as-contract tx-sender) )) ERR_DEALER_STX_TRANSFER_FAILED)
  ;; ##############################################################################################################################               
-                    (asserts! (is-eq (map-set dealer-map dealer-2 (merge dealer {assets-submitted: true}))) ERR_DEALER_UPDATE_FAILED)
+                    (asserts! (is-eq (map-set dealer-map dealer-2 (merge dealer {assets-submitted: true})) ) ERR_DEALER_UPDATE_FAILED)
                 )
            )
            true
