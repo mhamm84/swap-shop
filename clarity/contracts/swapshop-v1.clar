@@ -122,7 +122,7 @@
                         (dealer (unwrap-panic (map-get? dealer-map dealer-2)))
                         (assets-submitted (get assets-submitted dealer))
                     ) 
-                    (asserts! assets-submitted ERR_DEALER_ALREADY_SUBMITTED)
+                    (asserts! (is-eq assets-submitted false) ERR_DEALER_ALREADY_SUBMITTED)
  ;; ##############################################################################################################################                                  
                     (asserts! (is-ok (stx-transfer? u10000 tx-sender (as-contract tx-sender) )) ERR_DEALER_STX_TRANSFER_FAILED)
  ;; ##############################################################################################################################               
@@ -168,6 +168,7 @@
 
 (define-public (claim)
     (begin 
+        (asserts! (is-some (map-get? dealer-map tx-sender)) ERR_DEALER_NOT_FOUND)
         (asserts! (>= block-height (var-get time-lock)) ERR_TIME_LOCK_NOT_REACHED)
         (var-set deal-status u3)
 

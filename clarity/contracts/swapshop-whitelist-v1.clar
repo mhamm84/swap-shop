@@ -69,6 +69,9 @@
 ;; I N I T  W H I T E L I S T
 ;; >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
+;; test NFT
+(map-insert whitelist .sip009-test true)
+
 (map-insert whitelist 'SP3D6PV2ACBPEKYJTCMH7HEN02KP87QSP8KTEH335.megapont-ape-club-nft true)
 (map-insert whitelist 'SP3D6PV2ACBPEKYJTCMH7HEN02KP87QSP8KTEH335.megapont-robot-nft true)
 (map-insert whitelist 'SP3D6PV2ACBPEKYJTCMH7HEN02KP87QSP8KTEH335.megapont-robot-component-nft true)
