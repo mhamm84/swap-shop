@@ -24,6 +24,7 @@
 ;; S I P 0 0 1 0 - N F T
 
 ;; D E V
+;;
 (use-trait ft-trait .traits.sip-010-trait)
 (use-trait nft-trait .traits.sip-009-trait)
 
@@ -38,12 +39,11 @@
 ;; P U B L I C 
 ;;
 ;; real-only function returning information on this contract
-
 (define-read-only (get-info)
     (ok {
-        deal-status: (get-deal-status),
+        dealStatus: (get-deal-status),
         confirmations: (get-confirm-count),
-        time-lock: (get-time-lock),
+        timeLock: (get-time-lock),
         version: (get-version),
         dealers: (get-dealers)
     })
@@ -80,16 +80,17 @@
 (define-constant no-of-dealers u2)
 ;; number of confirms, must be a confirm for each dealer for the deal to complete
 (define-data-var confirm-count uint u0)
+;; dealer map, storeing some flags on the dealers
+(define-map dealer-map principal {assets-submitted: bool, confirmed-trade: bool, claimed: bool})
+;; status of the deal
+;; 1 = ACTIVE; 2 = COMPLETE; 3 = EXPIRED
+(define-data-var deal-status uint u1)
 ;; ##############################################################################################################################
 ;; the time lock for the dealers assets, on expiry, dealers can claim back
 (define-data-var time-lock uint u5)
 ;; ##############################################################################################################################
-;; dealer map, storeing some flags on the dealers
-(define-map dealer-map principal { assets-submitted: bool, confirmed-trade: bool, claimed: bool })
-;; status of the deal
-;; 1 = ACTIVE ; 2 = COMPLETE; 3 = EXPIRED
-(define-data-var deal-status uint u1)
 
+;; P U B L I C
 ;;
 (define-public (submit-deal)
 ;; ##############################################################################################################################
@@ -106,8 +107,9 @@
                         (assets-submitted (get assets-submitted dealer))
                     ) 
                     (asserts! (is-eq assets-submitted false) ERR_DEALER_ALREADY_SUBMITTED)
+                    ;;  .sip009-test.swapshop-test-nft
 ;; ##############################################################################################################################               
-                    (asserts! (is-ok (contract-call?  .sip009-test transfer u1 tx-sender (as-contract tx-sender))) ERR_DEALER_NFT_TRANSFER_FAILED)
+                    (asserts! (is-ok (contract-call?  'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sip009-test transfer u1 tx-sender (as-contract tx-sender))) ERR_DEALER_NFT_TRANSFER_FAILED)
 ;; ##############################################################################################################################                                   
                     (asserts! (is-eq (map-set dealer-map dealer-1 (merge dealer {assets-submitted: true}))) ERR_DEALER_UPDATE_FAILED)
                 )
@@ -154,9 +156,9 @@
             (begin 
                 ;; dealer-1 -> dealer-2
 ;; ##############################################################################################################################               
-                (asserts! (is-ok (contract-call?  .sip009-test transfer u1 (as-contract tx-sender) dealer-1)) ERR_DEALER_NFT_TRANSFER_FAILED)
+                (asserts! (is-ok (as-contract (contract-call?  'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sip009-test transfer u1 tx-sender dealer-1))) ERR_DEALER_NFT_TRANSFER_FAILED)
                 ;; dealer-2 -> dealer-1
-                (asserts! (is-ok (stx-transfer? u10000 (as-contract tx-sender) dealer-2)) ERR_DEALER_STX_TRANSFER_FAILED)
+                (asserts! (is-ok (as-contract (stx-transfer? u10000 tx-sender dealer-2))) ERR_DEALER_STX_TRANSFER_FAILED)
 ;; ##############################################################################################################################  
                 (var-set deal-status u2)             
             ) 
@@ -179,10 +181,15 @@
                     (
                         (dealer (unwrap-panic (map-get? dealer-map tx-sender)))
                         (claimed (get claimed dealer))
+                        (submitted (get assets-submitted dealer))
                     ) 
+                    (asserts! submitted ERR_DEAL_NOT_SUBMITTED)
                     (asserts! claimed ERR_DEALER_ALREADY_CLAIMED)
+                    ;;(contract-call? token-contract transfer token-id sender recipient)
+                    (print (as-contract tx-sender))
+                    (print tx-sender)
 ;; ##############################################################################################################################
-                    (asserts! (is-ok (contract-call?  .sip009-test transfer u1 (as-contract tx-sender) tx-sender)) ERR_DEALER_NFT_TRANSFER_FAILED)
+                    (asserts! (is-ok (as-contract (contract-call?  'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sip009-test transfer u1  tx-sender dealer-1))) ERR_DEALER_NFT_TRANSFER_FAILED)
 ;; ##############################################################################################################################                                 
                     (asserts! (is-eq (map-set dealer-map tx-sender (merge dealer {claimed: true}))) ERR_DEALER_UPDATE_FAILED)
                 )
@@ -196,10 +203,12 @@
                     (
                         (dealer (unwrap-panic (map-get? dealer-map dealer-2)))
                         (claimed (get claimed dealer))
+                        (submitted (get assets-submitted dealer))
                     ) 
+                    (asserts! submitted ERR_DEAL_NOT_SUBMITTED)
                     (asserts! claimed ERR_DEALER_ALREADY_CLAIMED)
 ;; ##############################################################################################################################
-                    (asserts! (is-ok (stx-transfer? u10000 (as-contract tx-sender) tx-sender)) ERR_DEALER_STX_TRANSFER_FAILED)
+                    (asserts! (is-ok (as-contract (stx-transfer? u10000 tx-sender dealer-2))) ERR_DEALER_STX_TRANSFER_FAILED)
 ;; ##############################################################################################################################               
                     (asserts! (is-eq (map-set dealer-map dealer-2 (merge dealer { claimed: true}))) ERR_DEALER_UPDATE_FAILED)
                 )
@@ -209,7 +218,6 @@
         (ok true)
     )
 )
-
 
 ;; E R R O R S
 ;;
@@ -228,6 +236,7 @@
 (define-constant ERR_DEALER_NOT_FOUND (err u209))
 
 (define-constant ERR_DEAL_ALREADY_CONFIRMED (err u300))
+(define-constant ERR_DEAL_NOT_SUBMITTED (err u301))
 
 
 ;; D E A L E R S
