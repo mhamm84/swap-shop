@@ -6,18 +6,18 @@ const contractName = 'swapshop-v1'
 /**
  * {
         confirmations: "u0",
-        dealStatus: "u1",
-        dealers: "[ST1SJ3DTE5DN7X54YDH5D64R3BCB6A2AG2ZQ8YPD5, ST2CY5V39NHDPWSXMW9QDT3HC3GD6Q6XX4CFRK9AG]",
+        tradeStatus: "u1",
+        traders: "[ST1SJ3DTE5DN7X54YDH5D64R3BCB6A2AG2ZQ8YPD5, ST2CY5V39NHDPWSXMW9QDT3HC3GD6Q6XX4CFRK9AG]",
         timeLock: "u5",
         version: '"v1"'
     }
  */
 export type GetInfoResponse = {
-    dealStatus: string,
+    tradeStatus: string,
     confirmations: string,
     timelock: string,
     version: string,
-    dealers: string
+    traders: string
 }
 
 export class SwapShop {
@@ -32,10 +32,26 @@ export class SwapShop {
         this.logEvents = logEvents
     }
 
-    submitDeal(sender: Account) {
+    submitTrade(sender: Account) {
         let block = this.chain.mineBlock([
-            Tx.contractCall(contractName, 'submit-deal', [], sender.address)
+            Tx.contractCall(contractName, 'submit-trade', [], sender.address)
         ])
+        let [receipt] = block.receipts
+
+        if(this.logEvents) {
+            for(var i:number = 0; i<receipt.events.length; i++){
+                console.log(receipt.events[i])
+            }
+        }
+
+        return receipt
+    }
+
+    confirmTrade(sender: Account) {
+        let block = this.chain.mineBlock([
+            Tx.contractCall(contractName, 'confirm-trade', [], sender.address)
+        ])
+
         let [receipt] = block.receipts
 
         if(this.logEvents) {

@@ -2,12 +2,12 @@
 ;; Author: Mark Hammond
 ;;
 ;; Overview:
-;; The swapshop contract is a bespoke contract deployed for 2 user who engage in a deal to transfer assets with each other
-;; in a trustless deal. The deal specifics are hammered out off-chain and then when a deal is agreed upon by both parties
+;; The swapshop contract is a bespoke contract deployed for 2 user who engage in a trader to transfer assets with each other
+;; in a trustless trade. The trade specifics are hammered out off-chain and then when a trade is agreed upon by both parties
 ;; a swapshop contract and be created and deployed onto the Stacks blockchain. Users have complete control over their assets
 ;; they send to the contract. A timelock is provided, which is a future blockheight where a user can claim their assets.
-;; Before a deal can go through in the time window, both parties have to confrim the transactions involved to transfer assets.
-;; The transfering of assets is an atomic operation. All transfers succeed, else the deal fails
+;; Before a trade can go through in the time window, both parties have to confrim the transactions involved to transfer assets.
+;; The transfering of assets is an atomic operation. All transfers succeed, else the trade fails
 
 ;; ################ -> Templated areas of the contract
 
@@ -41,30 +41,44 @@
 ;; real-only function returning information on this contract
 (define-read-only (get-info)
     (ok {
-        dealStatus: (get-deal-status),
+        tradeStatus: (get-trade-status),
         confirmations: (get-confirm-count),
-        timeLock: (get-time-lock),
+        timelock: (get-time-lock),
         version: (get-version),
-        dealers: (get-dealers)
+        traders: (get-traders)
     })
 )
 
 ;; P R I V A T E
 ;;
 (define-private (get-version) VERSION)
-(define-private (get-dealers) (var-get dealers))
-(define-private (get-deal-status) (var-get deal-status))
+(define-private (get-traders) (var-get traders))
+(define-private (get-trade-status) (var-get trade-status))
 (define-private (get-confirm-count) (var-get confirm-count))
 (define-private (get-time-lock) (var-get time-lock))
 
-;; adds a dealer principal to the dealers list - internal only
-(define-private (add-dealer-internal (dealer principal)) 
+;; adds a trader principal to the traders list - internal only
+(define-private (add-trader-internal (trader principal)) 
     (let 
         (
-            (new-dealers (unwrap! (as-max-len? (append (var-get dealers) dealer) u2) ERR_DEALER_MAX_REACHED))
+            (new-traders (unwrap! (as-max-len? (append (var-get traders) trader) u2) ERR_TRADER_MAX_REACHED))
         ) 
-        (map-set dealer-map dealer { assets-submitted: false, confirmed-trade: false, claimed: true })
-        (ok (var-set dealers new-dealers))
+        (map-set trader-map trader {assets-submitted: false, confirmed-trade: false, claimed: false})
+        (ok (var-set traders new-traders))
+    )
+)
+
+;; check to see if the timelock has expired on the trade
+(define-private (has-timelock-expired) 
+    (begin  
+        (if (>= block-height (var-get time-lock)) 
+            (begin 
+                (var-set trade-status u3)
+                (print {msg: "timelock has expired", timelock: (var-get time-lock), tradeStatus: (var-get trade-status)})
+                true
+            )
+            false
+        )
     )
 )
 
@@ -74,61 +88,61 @@
 (define-constant SELF (as-contract tx-sender))
 ;; version of the contract
 (define-constant VERSION "v1")
-;; dealers list for this contract - populated from init function
-(define-data-var dealers (list 2 principal) (list))
-;; number of dealers
-(define-constant no-of-dealers u2)
-;; number of confirms, must be a confirm for each dealer for the deal to complete
+;; traders list for this contract - populated from init function
+(define-data-var traders (list 2 principal) (list))
+;; number of traders
+(define-constant no-of-traders u2)
+;; number of confirms, must be a confirm for each trader for the trade to complete
 (define-data-var confirm-count uint u0)
-;; dealer map, storeing some flags on the dealers
-(define-map dealer-map principal {assets-submitted: bool, confirmed-trade: bool, claimed: bool})
-;; status of the deal
+;; trader map, storeing some flags on the traders
+(define-map trader-map principal {assets-submitted: bool, confirmed-trade: bool, claimed: bool})
+;; status of the trade
 ;; 1 = ACTIVE; 2 = COMPLETE; 3 = EXPIRED
-(define-data-var deal-status uint u1)
+(define-data-var trade-status uint u1)
 ;; ##############################################################################################################################
-;; the time lock for the dealers assets, on expiry, dealers can claim back
+;; the time lock for the traders assets, on expiry, traders can claim back
 (define-data-var time-lock uint u5)
 ;; ##############################################################################################################################
 
 ;; P U B L I C
 ;;
-(define-public (submit-deal)
+(define-public (submit-trade)
 ;; ##############################################################################################################################
     (begin 
         ;; Check the time-lock
-        (asserts! (<  block-height (var-get time-lock)) ERR_TIME_LOCK_EXCEEDED)
-        (asserts! (is-some (map-get? dealer-map tx-sender)) ERR_DEALER_NOT_FOUND)
-        ;; Check dealer 1
-        (if (is-eq tx-sender dealer-1)
+        (asserts! (not (has-timelock-expired)) ERR_TIME_LOCK_EXCEEDED)
+        (asserts! (is-some (map-get? trader-map tx-sender)) ERR_TRADER_NOT_FOUND)
+        ;; Check trader 1
+        (if (is-eq tx-sender trader-1)
            (begin
                 (let 
                     (
-                        (dealer (unwrap-panic (map-get? dealer-map dealer-1)))
-                        (assets-submitted (get assets-submitted dealer))
+                        (trader (unwrap-panic (map-get? trader-map trader-1)))
+                        (assets-submitted (get assets-submitted trader))
                     ) 
-                    (asserts! (is-eq assets-submitted false) ERR_DEALER_ALREADY_SUBMITTED)
+                    (asserts! (is-eq assets-submitted false) ERR_TRADER_ALREADY_SUBMITTED)
                     ;;  .sip009-test.swapshop-test-nft
 ;; ##############################################################################################################################               
-                    (asserts! (is-ok (contract-call?  'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sip009-test transfer u1 tx-sender (as-contract tx-sender))) ERR_DEALER_NFT_TRANSFER_FAILED)
+                    (asserts! (is-ok (contract-call?  'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sip009-test transfer u1 tx-sender (as-contract tx-sender))) ERR_TRADER_NFT_TRANSFER_FAILED)
 ;; ##############################################################################################################################                                   
-                    (asserts! (is-eq (map-set dealer-map dealer-1 (merge dealer {assets-submitted: true}))) ERR_DEALER_UPDATE_FAILED)
+                    (asserts! (is-eq (map-set trader-map trader-1 (merge trader {assets-submitted: true}))) ERR_TRADER_UPDATE_FAILED)
                 )
            )
            true
         )
-        ;; Check dealer 2
-        (if (is-eq tx-sender dealer-2)
+        ;; Check trader 2
+        (if (is-eq tx-sender trader-2)
            (begin
                 (let 
                     (
-                        (dealer (unwrap-panic (map-get? dealer-map dealer-2)))
-                        (assets-submitted (get assets-submitted dealer))
+                        (trader (unwrap-panic (map-get? trader-map trader-2)))
+                        (assets-submitted (get assets-submitted trader))
                     ) 
-                    (asserts! (is-eq assets-submitted false) ERR_DEALER_ALREADY_SUBMITTED)
+                    (asserts! (is-eq assets-submitted false) ERR_TRADER_ALREADY_SUBMITTED)
  ;; ##############################################################################################################################                                  
-                    (asserts! (is-ok (stx-transfer? u10000 tx-sender (as-contract tx-sender) )) ERR_DEALER_STX_TRANSFER_FAILED)
+                    (asserts! (is-ok (stx-transfer? u10000 tx-sender (as-contract tx-sender) )) ERR_TRADER_STX_TRANSFER_FAILED)
  ;; ##############################################################################################################################               
-                    (asserts! (is-eq (map-set dealer-map dealer-2 (merge dealer {assets-submitted: true})) ) ERR_DEALER_UPDATE_FAILED)
+                    (asserts! (is-eq (map-set trader-map trader-2 (merge trader {assets-submitted: true})) ) ERR_TRADER_UPDATE_FAILED)
                 )
            )
            true
@@ -138,29 +152,29 @@
 ;; ##############################################################################################################################
 )
 
-;; confirm the trade per dealer and if both agree, complete the deal
+;; confirm the trade per trader and if both agree, complete the trade
 (define-public (confirm-trade) 
     (begin  
-        (asserts! (is-some (map-get? dealer-map tx-sender)) ERR_DEALER_NOT_FOUND)
-        (asserts! (not (is-eq (var-get confirm-count) no-of-dealers)) ERR_DEAL_ALREADY_CONFIRMED)
+        (asserts! (is-some (map-get? trader-map tx-sender)) ERR_TRADER_NOT_FOUND)
+        (asserts! (not (is-eq (var-get confirm-count) no-of-traders)) ERR_TRADE_ALREADY_CONFIRMED)
 
         (let 
             (
-                (dealer (unwrap-panic (map-get? dealer-map tx-sender)))
+                (trader (unwrap-panic (map-get? trader-map tx-sender)))
             ) 
-            (asserts! (is-eq (map-set dealer-map tx-sender (merge dealer {confirmed-trade: true}))) ERR_DEALER_UPDATE_FAILED)
+            (asserts! (is-eq (map-set trader-map tx-sender (merge trader {confirmed-trade: true}))) ERR_TRADER_UPDATE_FAILED)
             (var-set confirm-count (+ (var-get confirm-count) u1))
         )
 
-        (if (is-eq (var-get confirm-count) no-of-dealers) 
+        (if (is-eq (var-get confirm-count) no-of-traders) 
             (begin 
-                ;; dealer-1 -> dealer-2
+                ;; trader-1 -> trader-2
 ;; ##############################################################################################################################               
-                (asserts! (is-ok (as-contract (contract-call?  'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sip009-test transfer u1 tx-sender dealer-1))) ERR_DEALER_NFT_TRANSFER_FAILED)
-                ;; dealer-2 -> dealer-1
-                (asserts! (is-ok (as-contract (stx-transfer? u10000 tx-sender dealer-2))) ERR_DEALER_STX_TRANSFER_FAILED)
+                (asserts! (is-ok (as-contract (contract-call?  'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sip009-test transfer u1 tx-sender trader-2))) ERR_TRADER_NFT_TRANSFER_FAILED)
+                ;; trader-2 -> trader-1
+                (asserts! (is-ok (as-contract (stx-transfer? u10000 tx-sender trader-1))) ERR_TRADER_STX_TRANSFER_FAILED)
 ;; ##############################################################################################################################  
-                (var-set deal-status u2)             
+                (var-set trade-status u2)             
             ) 
             true
         )
@@ -170,50 +184,46 @@
 
 (define-public (claim)
     (begin 
-        (asserts! (is-some (map-get? dealer-map tx-sender)) ERR_DEALER_NOT_FOUND)
-        (asserts! (>= block-height (var-get time-lock)) ERR_TIME_LOCK_NOT_REACHED)
-        (var-set deal-status u3)
+        (asserts! (is-some (map-get? trader-map tx-sender)) ERR_TRADER_NOT_FOUND)
+        (asserts! (has-timelock-expired) ERR_TIME_LOCK_NOT_REACHED)
+        (print {msg: "trader claiming back assets", trader: tx-sender})
 
-        ;; ##############################################################################################################################
-        (if (is-eq tx-sender dealer-1)
+;; ##############################################################################################################################
+        (if (is-eq tx-sender trader-1)
            (begin
                 (let 
                     (
-                        (dealer (unwrap-panic (map-get? dealer-map tx-sender)))
-                        (claimed (get claimed dealer))
-                        (submitted (get assets-submitted dealer))
+                        (trader (unwrap-panic (map-get? trader-map trader-1)))
+                        (claimed (get claimed trader))
+                        (submitted (get assets-submitted trader))
                     ) 
-                    (asserts! submitted ERR_DEAL_NOT_SUBMITTED)
-                    (asserts! claimed ERR_DEALER_ALREADY_CLAIMED)
-                    ;;(contract-call? token-contract transfer token-id sender recipient)
-                    (print (as-contract tx-sender))
-                    (print tx-sender)
-;; ##############################################################################################################################
-                    (asserts! (is-ok (as-contract (contract-call?  'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sip009-test transfer u1  tx-sender dealer-1))) ERR_DEALER_NFT_TRANSFER_FAILED)
-;; ##############################################################################################################################                                 
-                    (asserts! (is-eq (map-set dealer-map tx-sender (merge dealer {claimed: true}))) ERR_DEALER_UPDATE_FAILED)
+                    (asserts! submitted ERR_TRADE_NOT_SUBMITTED)
+                    (asserts! (not claimed) ERR_TRADER_ALREADY_CLAIMED)
+                    (asserts! (is-ok (as-contract (contract-call?  'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sip009-test transfer u1 tx-sender trader-1))) ERR_TRADER_NFT_TRANSFER_FAILED)
+                    (asserts! (is-eq (map-set trader-map trader-1 (merge trader {claimed: true}))) ERR_TRADER_UPDATE_FAILED)
+                    true
                 )
            )
-           true
+           false
         )
-        ;; Check dealer 2
-        (if (is-eq tx-sender dealer-2)
+        ;; Check trader 2
+        (if (is-eq tx-sender trader-2)
            (begin
                 (let 
                     (
-                        (dealer (unwrap-panic (map-get? dealer-map dealer-2)))
-                        (claimed (get claimed dealer))
-                        (submitted (get assets-submitted dealer))
+                        (trader (unwrap-panic (map-get? trader-map trader-2)))
+                        (claimed (get claimed trader))
+                        (submitted (get assets-submitted trader))
                     ) 
-                    (asserts! submitted ERR_DEAL_NOT_SUBMITTED)
-                    (asserts! claimed ERR_DEALER_ALREADY_CLAIMED)
-;; ##############################################################################################################################
-                    (asserts! (is-ok (as-contract (stx-transfer? u10000 tx-sender dealer-2))) ERR_DEALER_STX_TRANSFER_FAILED)
-;; ##############################################################################################################################               
-                    (asserts! (is-eq (map-set dealer-map dealer-2 (merge dealer { claimed: true}))) ERR_DEALER_UPDATE_FAILED)
+                    (asserts! submitted ERR_TRADE_NOT_SUBMITTED)
+                    (asserts! (not claimed) ERR_TRADER_ALREADY_CLAIMED)
+                    (asserts! (is-ok (as-contract (stx-transfer? u10000 tx-sender trader-2))) ERR_TRADER_STX_TRANSFER_FAILED)
+                    (asserts! (is-eq (map-set trader-map trader-2 (merge trader { claimed: true}))) ERR_TRADER_UPDATE_FAILED)
+;; ##############################################################################################################################                                 
+                     true
                 )
            )
-           true
+           false
         )
         (ok true)
     )
@@ -223,43 +233,41 @@
 ;;
 (define-constant ERR_TIME_LOCK_EXCEEDED (err u100))
 (define-constant ERR_TIME_LOCK_NOT_REACHED (err u101))
-
-(define-constant ERR_DEALER_NOT_SENDER (err u200))
-(define-constant ERR_DEALER_MAX_REACHED (err u201))
-(define-constant ERR_DEALER_ALREADY_SUBMITTED (err u202))
-(define-constant ERR_DEALER_ALREADY_CONFIRMED (err u203))
-(define-constant ERR_DEALER_ALREADY_CLAIMED (err u204))
-(define-constant ERR_DEALER_NFT_TRANSFER_FAILED (err u205))
-(define-constant ERR_DEALER_STX_TRANSFER_FAILED (err u206))
-(define-constant ERR_DEALER_FT_TRANSFER_FAILED (err u207))
-(define-constant ERR_DEALER_UPDATE_FAILED (err u208))
-(define-constant ERR_DEALER_NOT_FOUND (err u209))
-
-(define-constant ERR_DEAL_ALREADY_CONFIRMED (err u300))
-(define-constant ERR_DEAL_NOT_SUBMITTED (err u301))
+(define-constant ERR_TRADER_NOT_SENDER (err u200))
+(define-constant ERR_TRADER_MAX_REACHED (err u201))
+(define-constant ERR_TRADER_ALREADY_SUBMITTED (err u202))
+(define-constant ERR_TRADER_ALREADY_CONFIRMED (err u203))
+(define-constant ERR_TRADER_ALREADY_CLAIMED (err u204))
+(define-constant ERR_TRADER_NFT_TRANSFER_FAILED (err u205))
+(define-constant ERR_TRADER_STX_TRANSFER_FAILED (err u206))
+(define-constant ERR_TRADER_FT_TRANSFER_FAILED (err u207))
+(define-constant ERR_TRADER_UPDATE_FAILED (err u208))
+(define-constant ERR_TRADER_NOT_FOUND (err u209))
+(define-constant ERR_TRADE_ALREADY_CONFIRMED (err u300))
+(define-constant ERR_TRADE_NOT_SUBMITTED (err u301))
 
 
 ;; D E A L E R S
 ;; ##############################################################################################################################
-;; Dealer constants are dynamically added to the contract when a swapshop deal is setup. 
-;; The dealer-1 and dealer-2 principal addresses are injected it BEFORE the contract is programatically deployed to the blockchain
+;; trader constants are dynamically added to the contract when a swapshop trade is setup. 
+;; The trader-1 and trader-2 principal addresses are injected it BEFORE the contract is programatically deployed to the blockchain
 ;; deployer ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-(define-constant dealer-1 'ST1SJ3DTE5DN7X54YDH5D64R3BCB6A2AG2ZQ8YPD5)
-(define-constant dealer-2 'ST2CY5V39NHDPWSXMW9QDT3HC3GD6Q6XX4CFRK9AG)
+(define-constant trader-1 'ST1SJ3DTE5DN7X54YDH5D64R3BCB6A2AG2ZQ8YPD5)
+(define-constant trader-2 'ST2CY5V39NHDPWSXMW9QDT3HC3GD6Q6XX4CFRK9AG)
 ;; ##############################################################################################################################
 
 ;; I N I T
 ;;
-;; init function to add the dealers to an internal list for info purpuses
+;; init function to add the traders to an internal list for info purpuses
 (define-private (init (d (list 2 principal)) ) 
     (begin  
-        (map add-dealer-internal d)
-        (print {action:  "init of deal"})
+        (map add-trader-internal d)
+        (print {action:  "init of trade"})
     )
 )
 ;; call init
 (init (list 
-        dealer-1
-        dealer-2
+        trader-1
+        trader-2
     )
 )
