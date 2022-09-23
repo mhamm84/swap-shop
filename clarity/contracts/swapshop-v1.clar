@@ -162,6 +162,8 @@
             (
                 (trader (unwrap-panic (map-get? trader-map tx-sender)))
             ) 
+            (asserts! (get assets-submitted trader) ERR_TRADE_NOT_SUBMITTED)
+            (asserts! (not (get confirmed-trade trader)) ERR_TRADER_ALREADY_CONFIRMED)
             (asserts! (is-eq (map-set trader-map tx-sender (merge trader {confirmed-trade: true}))) ERR_TRADER_UPDATE_FAILED)
             (var-set confirm-count (+ (var-get confirm-count) u1))
         )
