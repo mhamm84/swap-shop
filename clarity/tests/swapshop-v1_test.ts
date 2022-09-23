@@ -10,6 +10,7 @@ const contractName = 'swapshop-v1'
 const defaultNftAssetContract = "sip009-test"
 const contractPrincipal = (acc: Account) => `${acc.address}.${contractName}`
 let logEvents = true
+const timelockBlocks = 36
 
 Clarinet.test({
     name: "get-info",
@@ -23,9 +24,9 @@ Clarinet.test({
         const resp = receipt.result.expectOk().expectTuple() as GetInfoResponse
         assertEquals(resp.confirmations, "u0", "confimrations expected")
         assertEquals(resp.tradeStatus, "u1", "trade status expected")
-        assertEquals(resp.timelock, "u5", "time lock expected")
+        assertEquals(resp.timelock, "u"+timelockBlocks, "time lock expected")
 
-        Utils.checkTradeInfo(receipt, 0, 1, 5)
+        Utils.checkTradeInfo(receipt, 0, 1, timelockBlocks)
         // (ok {confirmations: u0, trade-status: u1, traders: [ST1SJ3DTE5DN7X54YDH5D64R3BCB6A2AG2ZQ8YPD5, ST2CY5V39NHDPWSXMW9QDT3HC3GD6Q6XX4CFRK9AG], time-lock: u5, version: "v1"})
     }
 })
@@ -65,13 +66,13 @@ Clarinet.test({
         let swapShop = new SwapShop(chain, deployer, logEvents)
 
         const receipt = swapShop.submitTrade(trader3)
-        receipt.result.expectErr().expectUint(209)
+        receipt.result.expectErr().expectUint(208)
      }
 })
 
 
 Clarinet.test({
-    name: "sumbit-trade",
+    name: "sumbit-trade-trader1",
     async fn(chain: Chain, accounts: Map<string, Account>) {
         const [deployer, trader1, trader2] = ['deployer', 'wallet_1', 'wallet_2'].map(name => accounts.get(name)!)
 
@@ -144,7 +145,7 @@ Clarinet.test({
         )
 
         const receipt2 = swapShop.submitTrade(trader1)
-        receipt2.result.expectErr().expectUint(202)
+        receipt2.result.expectErr().expectUint(201)
      }
 })
 
@@ -156,7 +157,7 @@ Clarinet.test({
         let swapShop = new SwapShop(chain, deployer, logEvents)
 
         const receipt = swapShop.submitTrade(trader1)
-        receipt.result.expectErr().expectUint(205)
+        receipt.result.expectErr().expectUint(204)
 
      }
 })
@@ -182,7 +183,7 @@ Clarinet.test({
 
         chain.mineEmptyBlockUntil(50)
         const receipt = swapShop.claim(trader1)
-        receipt.result.expectErr().expectUint(301)
+        receipt.result.expectErr().expectUint(209)
     }
 })
 
@@ -195,7 +196,7 @@ Clarinet.test({
 
         chain.mineEmptyBlockUntil(50)
         const receipt = swapShop.claim(trader3)
-        receipt.result.expectErr().expectUint(209)
+        receipt.result.expectErr().expectUint(208)
     }
 })
 
@@ -237,7 +238,7 @@ Clarinet.test({
         )
 
         const claim1Receipt2 = swapShop.claim(trader1)
-        claim1Receipt2.result.expectErr().expectUint(204)
+        claim1Receipt2.result.expectErr().expectUint(203)
     }
 })
 
@@ -310,11 +311,11 @@ Clarinet.test({
         chain.mineEmptyBlockUntil(5)
 
         const confirmtrader1 = swapShop.confirmTrade(trader1)
-        confirmtrader1.result.expectErr().expectUint(301)
+        confirmtrader1.result.expectErr().expectUint(209)
 
         const receipt = swapShop.getInfo(trader1)
         console.log(receipt.result)
-        Utils.checkTradeInfo(receipt, 0, 1, 5)
+        Utils.checkTradeInfo(receipt, 0, 1, timelockBlocks)
     }
 })
 
@@ -328,7 +329,7 @@ Clarinet.test({
         chain.mineEmptyBlockUntil(5)
 
         const confirmtrader1 = swapShop.confirmTrade(trader3)
-        confirmtrader1.result.expectErr().expectUint(209)
+        confirmtrader1.result.expectErr().expectUint(208)
     }
 })
 
@@ -371,14 +372,14 @@ Clarinet.test({
 
         const receipt = swapShop.getInfo(trader1)
         console.log(receipt.result)
-        Utils.checkTradeInfo(receipt, 1, 1, 5)
+        Utils.checkTradeInfo(receipt, 1, 1, timelockBlocks)
 
         const confirmtrader2 = swapShop.confirmTrade(trader2)
         confirmtrader2.result.expectOk()
 
         const receipt2 = swapShop.getInfo(trader2)
         console.log(receipt2.result)
-        Utils.checkTradeInfo(receipt2, 2, 2, 5)
+        Utils.checkTradeInfo(receipt2, 2, 2, timelockBlocks)
 
         // >> CHECK NFT TRANSFER TO TRADER 2
         confirmtrader2.events.expectNonFungibleTokenTransferEvent(
@@ -436,14 +437,14 @@ Clarinet.test({
 
         const receipt = swapShop.getInfo(trader1)
         console.log(receipt.result)
-        Utils.checkTradeInfo(receipt, 1, 1, 5)
+        Utils.checkTradeInfo(receipt, 1, 1, timelockBlocks)
 
         const confirmtrader2 = swapShop.confirmTrade(trader2)
         confirmtrader2.result.expectOk()
 
         const receipt2 = swapShop.getInfo(trader2)
         console.log(receipt2.result)
-        Utils.checkTradeInfo(receipt2, 2, 2, 5)
+        Utils.checkTradeInfo(receipt2, 2, 2, timelockBlocks)
 
         // >> CHECK NFT TRANSFER TO TRADER 2
         confirmtrader2.events.expectNonFungibleTokenTransferEvent(
@@ -461,7 +462,7 @@ Clarinet.test({
         )
 
         const confirm2trader2 = swapShop.confirmTrade(trader2)
-        confirm2trader2.result.expectErr().expectUint(300)
+        confirm2trader2.result.expectErr().expectUint(102)
     }
 })
 
@@ -504,13 +505,78 @@ Clarinet.test({
         const confirmtrader1 = swapShop.confirmTrade(trader1)
         confirmtrader1.result.expectOk()
         let receipt = swapShop.getInfo(trader1)
-        Utils.checkTradeInfo(receipt, 1, 1, 5)
+        Utils.checkTradeInfo(receipt, 1, 1, timelockBlocks)
 
         // SECOND CONFIRM - SAME TRADER
         const confirm2trader1 = swapShop.confirmTrade(trader1)
-        confirm2trader1.result.expectErr().expectUint(203)
+        confirm2trader1.result.expectErr().expectUint(202)
         receipt = swapShop.getInfo(trader1)
-        Utils.checkTradeInfo(receipt, 1, 1, 5)
+        Utils.checkTradeInfo(receipt, 1, 1, timelockBlocks)
     }
 })
 
+Clarinet.test({
+    name: "submit-deal-done",
+    async fn(chain: Chain, accounts: Map<string, Account>) {
+        const [deployer, trader1, trader2, trader3] = ['deployer', 'wallet_1', 'wallet_2', 'wallet_3'].map(name => accounts.get(name)!)  
+        
+        let swapShop = new SwapShop(chain, deployer, logEvents)
+
+        //>>>>> MINT >>>>>>
+        const minter = {chain: chain, deployer: deployer, recipient: trader1, nftAsset: defaultNftAssetContract}
+		const mint1 = Utils.mintNft(minter)
+        console.log("nft create - id: " + mint1.tokenId)
+
+        const trader1Receipt = swapShop.submitTrade(trader1)
+        trader1Receipt.result.expectOk()
+        // >> CHECK NFT TRANSFER TO CONTRACT
+        trader1Receipt.events.expectNonFungibleTokenTransferEvent(
+            mint1.tokenId,
+            trader1.address,
+            contractPrincipal(deployer),
+            mint1.nftAsset,
+            mint1.nftAssetId
+        )
+
+        const trader2Receipt = swapShop.submitTrade(trader2)
+        trader2Receipt.result.expectOk()
+        // >> CHECK STX TRANSFER TO CONTRACT
+        trader2Receipt.events.expectSTXTransferEvent(
+            10000,
+            trader2.address,
+            contractPrincipal(deployer)   
+        )
+
+        const confirmtrader1 = swapShop.confirmTrade(trader1)
+        confirmtrader1.result.expectOk()
+
+        const receipt = swapShop.getInfo(trader1)
+        console.log(receipt.result)
+        Utils.checkTradeInfo(receipt, 1, 1, timelockBlocks)
+
+        const confirmtrader2 = swapShop.confirmTrade(trader2)
+        confirmtrader2.result.expectOk()
+
+        const receipt2 = swapShop.getInfo(trader2)
+        console.log(receipt2.result)
+        Utils.checkTradeInfo(receipt2, 2, 2, timelockBlocks)
+
+        // >> CHECK NFT TRANSFER TO TRADER 2
+        confirmtrader2.events.expectNonFungibleTokenTransferEvent(
+            mint1.tokenId,
+            contractPrincipal(deployer),
+            trader2.address,
+            mint1.nftAsset,
+            mint1.nftAssetId
+        )
+        // >> CHECK STX TRANSFER TO TRADER 1
+        confirmtrader2.events.expectSTXTransferEvent(
+            10000,
+            contractPrincipal(deployer),
+            trader1.address,
+        )
+
+        const trader1Receipt2 = swapShop.submitTrade(trader1)
+        trader1Receipt2.result.expectErr().expectUint(102)
+    }
+})

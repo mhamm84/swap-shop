@@ -4,22 +4,10 @@
 	)
 )
 
-(define-trait executor-trait
-	(
-		(execute (<swapshop-trait> <sip-010-trait> <sip-009-trait> (optional principal) (optional uint) (optional (buff 20))) (response bool uint))
-	)
-)
-
-(define-trait commission
-    (
-      (pay (uint) (response bool uint))
-    )
-)
-
 (define-trait sip-009-trait
   (
     ;; Last token ID, limited to uint range
-	(get-last-token-id () (response uint uint))
+	  (get-last-token-id () (response uint uint))
 
     ;; URI for metadata associated with the token 
     (get-token-uri (uint) (response (optional (string-ascii 256)) uint))
