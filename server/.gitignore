@@ -1,0 +1,39 @@
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+
+# User-specific stuff
+.idea/**/workspace.xml
+.idea/**/tasks.xml
+.idea/**/usage.statistics.xml
+.idea/**/dictionaries
+.idea/**/shelf
+
+# Generated files
+.idea/**/contentModel.xml
+
+# Sensitive or high-churn files
+.idea/**/dataSources/
+.idea/**/dataSources.ids
+.idea/**/dataSources.local.xml
+.idea/**/sqlDataSources.xml
+.idea/**/dynamic.xml
+.idea/**/uiDesigner.xml
+.idea/**/dbnavigator.xml
+/docker/.env
+/.env
+/.envrc
+/docker-prev/bin/
+/testing/integration/economic/data/main/sql/
+/docker-prev/bin/
+/docker/integration/.env
+/cmd/pulse/pulse
+/vendor/
+/swapshop
+/docker/bin/
+/pulse.log
+/docker/bin/linux_amd64/swapshop
