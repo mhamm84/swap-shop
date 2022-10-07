@@ -6,8 +6,8 @@
 ;; in a trustless trade. The trade specifics are hammered out off-chain and then when a trade is agreed upon by both parties
 ;; a swapshop contract and be created and deployed onto the Stacks blockchain. Users have complete control over their assets
 ;; they send to the contract. A timelock is provided, which is a future blockheight where a user can claim their assets.
-;; Before a trade can go through in the time window, both parties have to confrim the transactions involved to transfer assets.
-;; The transfering of assets is an atomic operation. All transfers succeed, else the trade fails
+;; Before a trade can go through in the time window, both parties have to confirm the transactions involved to transfer assets.
+;; The transferring of assets is an atomic operation. All transfers succeed, else the trade fails
 
 
 ;; D E A L  T R A I T S
@@ -27,7 +27,7 @@
 (define-constant no-of-traders u2)
 ;; number of confirms, must be a confirm for each trader for the trade to complete
 (define-data-var confirm-count uint u0)
-;; trader map, storeing some flags on the traders
+;; trader map, storing some flags on the traders
 (define-map trader-map principal {assets-submitted: bool, confirmed-trade: bool, claimed: bool})
 ;; status of the trade
 ;; 1=ACTIVE; 2=COMPLETE; 3=EXPIRED
@@ -230,7 +230,7 @@
 ;; D E A L E R S
 ;;
 ;; trader constants are dynamically added to the contract when a swapshop trade is setup. 
-;; The trader-1 and trader-2 principal addresses are injected it BEFORE the contract is programatically deployed to the blockchain
+;; The trader-1 and trader-2 principal addresses are injected it BEFORE the contract is programmatically deployed to the blockchain
 ;; deployer ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
 (define-constant trader-1 'ST1SJ3DTE5DN7X54YDH5D64R3BCB6A2AG2ZQ8YPD5)
 (define-constant trader-2 'ST2CY5V39NHDPWSXMW9QDT3HC3GD6Q6XX4CFRK9AG)
@@ -248,7 +248,7 @@
         trader-1
         trader-2
     )
-)er-internal d)
+)r-internal d)
         (print {action:  "init of trade"})
     )
 )

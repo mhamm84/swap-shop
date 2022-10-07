@@ -29,7 +29,7 @@ func (t tradeService) CreateTrade(ctx context.Context, inputTrade *CreateTrade) 
 	// TODO - Validate
 	// TODO - Persist the Trade
 
-	templateFilename := "swapshop-v1.tmpl"
+	templateFilename := "swapshop-private-trade-v1.tmpl"
 
 	tmpl, err := template.New(templateFilename).ParseFS(templateFS, "templates/"+templateFilename)
 	if err != nil {
@@ -47,7 +47,7 @@ func (t tradeService) CreateTrade(ctx context.Context, inputTrade *CreateTrade) 
 	}
 
 	// utils.Logger(context.TODO()).Debug("file", zap.String("clar", string(clarityContract.Bytes()[:])))
-	fileName := "swapshop-v1.clar"
+	fileName := "swapshop-private-trade-v1.clar"
 	contractFile, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
 		msg := fmt.Sprintf("Unable to open file %s", fileName)

@@ -15,8 +15,8 @@ path = "contracts/sip009-test.clar"
 [contracts.sip010-test]
 path = "contracts/sip010-test.clar"
 
-[contracts.swapshop-v1]
-path = "contracts/swapshop-v1.clar"
+[contracts.swapshop-private-trade-v1]
+path = "contracts/swapshop-private-trade-v1.clar"
 
 [contracts.swapshop-whitelist-v1]
 path = "contracts/swapshop-whitelist-v1.clar"

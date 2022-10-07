@@ -2,11 +2,11 @@
 import { Clarinet, Tx, Chain, Account, types } from 'https://deno.land/x/clarinet@v0.34.0/index.ts';
 import { assertEquals } from 'https://deno.land/std@0.90.0/testing/asserts.ts';
 import * as Utils from  './util/swapshop-tests-utils.ts';
-import { SwapShop, GetInfoResponse } from './model/swapshop-v1-model.ts';
+import { SwapShop, GetInfoResponse } from './model/swapshop-private-trade-model.ts';
 
 
 //  C O N S T A N T S
-const contractName = 'swapshop-v1'
+const contractName = 'swapshop-private-trade-v1'
 const defaultNftAssetContract = "sip009-test"
 const defaultFtAssetContract = "sip010-test"
 const contractPrincipal = (acc: Account) => `${acc.address}.${contractName}`

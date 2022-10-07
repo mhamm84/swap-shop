@@ -1,6 +1,6 @@
 import { Clarinet, Tx, Chain, Account, types, TxReceipt } from 'https://deno.land/x/clarinet@v0.34.0/index.ts';
 import { assertEquals } from 'https://deno.land/std@0.90.0/testing/asserts.ts';
-import { GetInfoResponse } from '../model/swapshop-v1-model.ts';
+import { GetInfoResponse } from '../model/swapshop-private-trade-model.ts';
 
 export interface NftMinter {
     chain: Chain,

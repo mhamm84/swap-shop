@@ -20,14 +20,9 @@ type TradeService interface {
 	CreateTrade(ctx context.Context, inputTrade *CreateTrade) (*data.Trade, error)
 }
 
-/*
-templ := `{{range $k, $v := .ArchiveList}}Key: {{$k}}, Value: {{$v}}
-{{end}}`
-*/
-
 type CreateTrade struct {
-	TraderOne    string `json:"trader_one"`
-	TraderTwo    string `json:"trader_two"`
+	Trader1      string `json:"trader_1"`
+	Trader2      string `json:"trader_2"`
 	LockedUntil  uint64 `json:"locked_until"`
 	NftTransfers []struct {
 		Contract string `json:"contract"`

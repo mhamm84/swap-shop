@@ -1,6 +1,6 @@
 import { Clarinet, Tx, Chain, Account, types } from 'https://deno.land/x/clarinet@v0.34.0/index.ts';
 
-const contractName = 'swapshop-v1'
+const contractName = 'swapshop-private-trade-v1'
 
 
 /**
