@@ -46,22 +46,29 @@ func (t tradeService) CreateTrade(ctx context.Context, inputTrade *CreateTrade) 
 		return nil, errors.Wrap(err, msg)
 	}
 
-	// utils.Logger(context.TODO()).Debug("file", zap.String("clar", string(clarityContract.Bytes()[:])))
+	err = writeClarityFile(ctx, clarityContract)
+	if err != nil {
+		return nil, err
+	}
+
+	return trade, nil
+
+}
+
+func writeClarityFile(ctx context.Context, clarityContract *buffer.Buffer) error {
 	fileName := "swapshop-private-trade-v1.clar"
 	contractFile, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
 		msg := fmt.Sprintf("Unable to open file %s", fileName)
 		utils.Logger(ctx).Error(msg, zap.Error(err))
-		return nil, errors.Wrap(err, msg)
+		return errors.Wrap(err, msg)
 	}
 
 	_, err = contractFile.Write(clarityContract.Bytes())
 	if err != nil {
 		msg := fmt.Sprintf("Unable to write bytes into file %s", fileName)
 		utils.Logger(ctx).Error(msg, zap.Error(err))
-		return nil, errors.Wrap(err, msg)
+		return errors.Wrap(err, msg)
 	}
-
-	return trade, nil
-
+	return nil
 }
