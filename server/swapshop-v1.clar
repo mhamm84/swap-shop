@@ -33,12 +33,13 @@
 ;; 1=ACTIVE; 2=COMPLETE; 3=EXPIRED
 (define-data-var trade-status uint u1)
 ;; the time lock for the traders assets, on expiry, traders can claim back
-(define-data-var timelock uint u36)
+(define-data-var timelock uint u30000)
 (define-private (get-version) VERSION)
 (define-private (get-traders) (var-get traders))
 (define-private (get-trade-status) (var-get trade-status))
 (define-private (get-confirm-count) (var-get confirm-count))
 (define-private (get-timelock) (var-get timelock))
+
 
 ;; P R I V A T E
 ;;
@@ -102,8 +103,9 @@
                         (assets-submitted (get assets-submitted trader))
                     ) 
                     (asserts! (is-eq assets-submitted false) ERR_TRADER_ALREADY_SUBMITTED)
-                    (asserts! (is-ok (contract-call?  'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sip009-test transfer u1 tx-sender (as-contract tx-sender))) ERR_TRADER_NFT_TRANSFER_FAILED)
-                    (asserts! (is-ok (contract-call?  'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sip010-test transfer u1000 tx-sender (as-contract tx-sender) none)) ERR_TRADER_FT_TRANSFER_FAILED)
+                    (asserts! (is-ok (contract-call?  'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sip009-test transfer u2 tx-sender (as-contract tx-sender))) ERR_TRADER_NFT_TRANSFER_FAILED)
+                    (asserts! (is-ok (contract-call?  'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sip010-test transfer u1000 tx-sender (as-contract tx-sender))) ERR_TRADER_FT_TRANSFER_FAILED)
+                    
                     (asserts! (is-eq (map-set trader-map trader-1 (merge trader {assets-submitted: true}))) ERR_TRADER_UPDATE_FAILED)
                 )
            )
@@ -118,7 +120,9 @@
                         (assets-submitted (get assets-submitted trader))
                     ) 
                     (asserts! (is-eq assets-submitted false) ERR_TRADER_ALREADY_SUBMITTED)
-                    (asserts! (is-ok (stx-transfer? u10000 tx-sender (as-contract tx-sender) )) ERR_TRADER_STX_TRANSFER_FAILED)
+                    
+                    
+                    (asserts! (is-ok (stx-transfer? u1000 tx-sender (as-contract tx-sender) )) ERR_TRADER_STX_TRANSFER_FAILED)
                     (asserts! (is-eq (map-set trader-map trader-2 (merge trader {assets-submitted: true})) ) ERR_TRADER_UPDATE_FAILED)
                 )
            )
@@ -145,17 +149,16 @@
         )
 
         (if (is-eq (var-get confirm-count) no-of-traders) 
-            (begin 
-                (asserts! (is-ok (as-contract (contract-call?  'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sip009-test transfer u1 tx-sender trader-2))) ERR_TRADER_NFT_TRANSFER_FAILED)
-                (asserts! (is-ok (as-contract (contract-call?  'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sip010-test transfer u1000 tx-sender trader-2 none))) ERR_TRADER_FT_TRANSFER_FAILED)
-                (asserts! (is-ok (as-contract (stx-transfer? u10000 tx-sender trader-1))) ERR_TRADER_STX_TRANSFER_FAILED)
-                (var-set trade-status u2)             
+            (begin
+                (asserts! (is-ok (as-contract (contract-call?  'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sip009-test transfer u2 tx-sender trader-2))) ERR_TRADER_NFT_TRANSFER_FAILED)
+                (asserts! (is-ok (as-contract (contract-call?  'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sip010-test transfer u1000 tx-sender trader-2)) ERR_TRADER_FT_TRANSFER_FAILED)
+                (asserts! (is-ok (as-contract (stx-transfer? u1000 tx-sender trader-1 ))) ERR_TRADER_STX_TRANSFER_FAILED)
+                (var-set trade-status u2)
             ) 
             true
         )
         (ok true)
     )
-)
 
 ;; claim assets back after the timelock expires and the trade was not completed or already claimed
 (define-public (claim)
@@ -173,10 +176,10 @@
                     ) 
                     (asserts! submitted ERR_TRADER_NOT_SUBMITTED)
                     (asserts! (not claimed) ERR_TRADER_ALREADY_CLAIMED)
-                    (asserts! (is-ok (as-contract (contract-call?  'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sip009-test transfer u1 tx-sender trader-1))) ERR_TRADER_NFT_TRANSFER_FAILED)
-                    (asserts! (is-ok (as-contract (contract-call?  'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sip010-test transfer u1000 tx-sender trader-1 none))) ERR_TRADER_FT_TRANSFER_FAILED)
-                    (asserts! (is-eq (map-set trader-map trader-1 (merge trader {claimed: true}))) ERR_TRADER_UPDATE_FAILED)
+                    (asserts! (is-ok (as-contract (contract-call?  'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sip009-test transfer u2 tx-sender trader-1))) ERR_TRADER_NFT_TRANSFER_FAILED)
+                    (asserts! (is-ok (as-contract (contract-call?  'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sip010-test transfer u1000 tx-sender trader-1))) ERR_TRADER_FT_TRANSFER_FAILED)
                     
+                    (asserts! (is-eq (map-set trader-map trader-1 (merge trader {claimed: true}))) ERR_TRADER_UPDATE_FAILED)
                     true
                 )
            )
@@ -193,7 +196,9 @@
                     ) 
                     (asserts! submitted ERR_TRADER_NOT_SUBMITTED)
                     (asserts! (not claimed) ERR_TRADER_ALREADY_CLAIMED)
-                    (asserts! (is-ok (as-contract (stx-transfer? u10000 tx-sender trader-2))) ERR_TRADER_STX_TRANSFER_FAILED)
+                    
+                    
+                    (asserts! (is-ok (as-contract (stx-transfer? u1000 tx-sender trader-2))) ERR_TRADER_STX_TRANSFER_FAILED)
                     (asserts! (is-eq (map-set trader-map trader-2 (merge trader { claimed: true}))) ERR_TRADER_UPDATE_FAILED)
                      true
                 )
@@ -236,6 +241,14 @@
 (define-private (init (d (list 2 principal)) ) 
     (begin  
         (map add-trader-internal d)
+        (print {action:  "init of trade"})
+    )
+)
+(init (list 
+        trader-1
+        trader-2
+    )
+)er-internal d)
         (print {action:  "init of trade"})
     )
 )

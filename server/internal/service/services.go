@@ -1,7 +1,29 @@
 package service
 
-type TradeService interface {
+import (
+	"context"
+	"github.com/mhamm84/swap-shop/server/internal/data"
+)
+
+type ServicesModel struct {
+	TradeService TradeService
 }
+
+func NewServicesModel() ServicesModel {
+
+	return ServicesModel{
+		TradeService: NewTradeService(),
+	}
+}
+
+type TradeService interface {
+	CreateTrade(ctx context.Context, inputTrade *CreateTrade) (*data.Trade, error)
+}
+
+/*
+templ := `{{range $k, $v := .ArchiveList}}Key: {{$k}}, Value: {{$v}}
+{{end}}`
+*/
 
 type CreateTrade struct {
 	TraderOne    string `json:"trader_one"`

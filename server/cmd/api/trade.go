@@ -21,6 +21,12 @@ func (app *application) createTradeHandler(w http.ResponseWriter, r *http.Reques
 		zap.Any("proposed trade", tradeInput),
 	)
 
+	_, err = app.services.TradeService.CreateTrade(r.Context(), &tradeInput)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
 	// TODO - Create the Service
 	env := envelope{
 		"msg": "Success",

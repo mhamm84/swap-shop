@@ -5,14 +5,16 @@ import (
 	"github.com/common-nighthawk/go-figure"
 	_ "github.com/lib/pq"
 	"github.com/mhamm84/swap-shop/server/cmd/config"
+	"github.com/mhamm84/swap-shop/server/internal/service"
 	"github.com/mhamm84/swap-shop/server/internal/utils"
 	"go.uber.org/zap"
 	"sync"
 )
 
 type application struct {
-	cfg config.ApiConfig
-	wg  *sync.WaitGroup
+	cfg      config.ApiConfig
+	wg       *sync.WaitGroup
+	services service.ServicesModel
 }
 
 func StartApi(cfg *config.ApiConfig) {
@@ -23,7 +25,8 @@ func StartApi(cfg *config.ApiConfig) {
 
 	// Create the app
 	app := application{
-		cfg: *cfg,
+		cfg:      *cfg,
+		services: service.NewServicesModel(),
 	}
 
 	logConfig(cfg)

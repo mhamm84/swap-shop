@@ -8,9 +8,23 @@ import { SwapShop, GetInfoResponse } from './model/swapshop-v1-model.ts';
 //  C O N S T A N T S
 const contractName = 'swapshop-v1'
 const defaultNftAssetContract = "sip009-test"
+const defaultFtAssetContract = "sip010-test"
 const contractPrincipal = (acc: Account) => `${acc.address}.${contractName}`
 let logEvents = true
 const timelockBlocks = 36
+
+// Helper funtion to mint the NFT and FT tokens to the deployer account and emit details
+function mintTokens(chain: Chain, deployer: Account, recipient: Account) {
+    //>>>>> MINT NFT >>>>>>
+    const minter = {chain: chain, deployer: deployer, recipient: recipient, nftAsset: defaultNftAssetContract}
+    const nftMint = Utils.mintNft(minter)
+
+    //>>>>>> FT MINT >>>>>>>
+    const ftMinter = {chain: chain, deployer: deployer, recipient: recipient, ftAsset: defaultFtAssetContract}
+    const ftMint = Utils.mintFt(2000000, ftMinter)
+
+    return { nftAsset: nftMint.nftAsset, nftAssetId: nftMint.nftAssetId, nftTokenId: nftMint.tokenId, ftMintAsset: ftMint.ftAsset, ftMintAssetId: ftMint.ftAssetId, ftAmount: ftMint.amount }
+}
 
 Clarinet.test({
     name: "get-info",
@@ -27,22 +41,8 @@ Clarinet.test({
         assertEquals(resp.timelock, "u"+timelockBlocks, "time lock expected")
 
         Utils.checkTradeInfo(receipt, 0, 1, timelockBlocks)
-        // (ok {confirmations: u0, trade-status: u1, traders: [ST1SJ3DTE5DN7X54YDH5D64R3BCB6A2AG2ZQ8YPD5, ST2CY5V39NHDPWSXMW9QDT3HC3GD6Q6XX4CFRK9AG], time-lock: u5, version: "v1"})
     }
 })
-
-/**
- * 
-    (define-read-only (get-info)
-        (ok {
-            trade-status: (get-trade-status),
-            confirmations: (get-confirm-count),
-            time-lock: (get-time-lock),
-            version: (get-version),
-            traders: (get-traders)
-        })
-    )
- */
 
 Clarinet.test({
     name: "submitTrade-time-lock-expired",
@@ -70,29 +70,31 @@ Clarinet.test({
      }
 })
 
-
 Clarinet.test({
     name: "sumbit-trade-trader1",
     async fn(chain: Chain, accounts: Map<string, Account>) {
         const [deployer, trader1, trader2] = ['deployer', 'wallet_1', 'wallet_2'].map(name => accounts.get(name)!)
 
         let swapShop = new SwapShop(chain, deployer, logEvents)
-
-        //>>>>> MINT >>>>>>
-        const minter = {chain: chain, deployer: deployer, recipient: trader1, nftAsset: defaultNftAssetContract}
-		const mint1 = Utils.mintNft(minter)
-        console.log("nft create - id: " + mint1.tokenId)
-
+        const mintInfo = mintTokens(chain, deployer, trader1)
+        
         const receipt = swapShop.submitTrade(trader1)
         receipt.result.expectOk()
 
         // >> CHECK NFT TRANSFER
         receipt.events.expectNonFungibleTokenTransferEvent(
-            mint1.tokenId,
+            mintInfo.nftTokenId,
             trader1.address,
             contractPrincipal(deployer),
-            mint1.nftAsset,
-            mint1.nftAssetId
+            mintInfo.nftAsset,
+            mintInfo.nftAssetId
+        )
+        // >> CHECK FT TRANSFER
+        receipt.events.expectFungibleTokenTransferEvent(
+            1000,
+            trader1.address,
+            contractPrincipal(deployer),
+            mintInfo.ftMintAssetId
         )
      }
 })
@@ -103,11 +105,8 @@ Clarinet.test({
         const [deployer, trader1, trader2] = ['deployer', 'wallet_1', 'wallet_2'].map(name => accounts.get(name)!)
 
         let swapShop = new SwapShop(chain, deployer, logEvents)
+        const mintInfo = mintTokens(chain, deployer, trader2)
 
-        //>>>>> MINT >>>>>>
-        const minter = {chain: chain, deployer: deployer, recipient: trader1, nftAsset: defaultNftAssetContract}
-		const mint1 = Utils.mintNft(minter)
-        console.log("nft create - id: " + mint1.tokenId)
         const receipt = swapShop.submitTrade(trader2)
         receipt.result.expectOk()
 
@@ -126,22 +125,18 @@ Clarinet.test({
         const [deployer, trader1, trader2] = ['deployer', 'wallet_1', 'wallet_2'].map(name => accounts.get(name)!)
 
         let swapShop = new SwapShop(chain, deployer, logEvents)
-
-        //>>>>> MINT >>>>>>
-        const minter = {chain: chain, deployer: deployer, recipient: trader1, nftAsset: defaultNftAssetContract}
-		const mint1 = Utils.mintNft(minter)
-        console.log("nft create - id: " + mint1.tokenId)
+        const mintInfo = mintTokens(chain, deployer, trader1)
 
         const receipt = swapShop.submitTrade(trader1)
         receipt.result.expectOk()
 
         // >> CHECK TRANSFER
         receipt.events.expectNonFungibleTokenTransferEvent(
-            mint1.tokenId,
+            mintInfo.nftTokenId,
             trader1.address,
             contractPrincipal(deployer),
-            mint1.nftAsset,
-            mint1.nftAssetId
+            mintInfo.nftAsset,
+            mintInfo.nftAssetId
         )
 
         const receipt2 = swapShop.submitTrade(trader1)
@@ -206,21 +201,17 @@ Clarinet.test({
         const [deployer, trader1, trader2, trader3] = ['deployer', 'wallet_1', 'wallet_2', 'wallet_3'].map(name => accounts.get(name)!)  
         
         let swapShop = new SwapShop(chain, deployer, logEvents)
-
-        //>>>>> MINT >>>>>>
-        const minter = {chain: chain, deployer: deployer, recipient: trader1, nftAsset: defaultNftAssetContract}
-		const mint1 = Utils.mintNft(minter)
-        console.log("nft create - id: " + mint1.tokenId)
+        const mintInfo = mintTokens(chain, deployer, trader1)
 
         const trader1Receipt = swapShop.submitTrade(trader1)
         trader1Receipt.result.expectOk()
         // >> CHECK NFT TRANSFER TO CONTRACT
         trader1Receipt.events.expectNonFungibleTokenTransferEvent(
-            mint1.tokenId,
+            mintInfo.nftTokenId,
             trader1.address,
             contractPrincipal(deployer),
-            mint1.nftAsset,
-            mint1.nftAssetId
+            mintInfo.nftAsset,
+            mintInfo.nftAssetId
         )
 
         chain.mineEmptyBlockUntil(50)
@@ -230,11 +221,11 @@ Clarinet.test({
 
         // >> CHECK NFT TRANSFER BACK TO SENDER
         claim1Receipt.events.expectNonFungibleTokenTransferEvent(
-            mint1.tokenId,
+            mintInfo.nftTokenId,
             contractPrincipal(deployer),
             trader1.address,
-            mint1.nftAsset,
-            mint1.nftAssetId
+            mintInfo.nftAsset,
+            mintInfo.nftAssetId
         )
 
         const claim1Receipt2 = swapShop.claim(trader1)
@@ -242,28 +233,23 @@ Clarinet.test({
     }
 })
 
-
 Clarinet.test({
     name: "claim-success",
     async fn(chain: Chain, accounts: Map<string, Account>) {
         const [deployer, trader1, trader2, trader3] = ['deployer', 'wallet_1', 'wallet_2', 'wallet_3'].map(name => accounts.get(name)!)  
         
         let swapShop = new SwapShop(chain, deployer, logEvents)
-
-        //>>>>> MINT >>>>>>
-        const minter = {chain: chain, deployer: deployer, recipient: trader1, nftAsset: defaultNftAssetContract}
-		const mint1 = Utils.mintNft(minter)
-        console.log("nft create - id: " + mint1.tokenId)
+        const mintInfo = mintTokens(chain, deployer, trader1)
 
         const trader1Receipt = swapShop.submitTrade(trader1)
         trader1Receipt.result.expectOk()
         // >> CHECK NFT TRANSFER TO CONTRACT
         trader1Receipt.events.expectNonFungibleTokenTransferEvent(
-            mint1.tokenId,
+            mintInfo.nftTokenId,
             trader1.address,
             contractPrincipal(deployer),
-            mint1.nftAsset,
-            mint1.nftAssetId
+            mintInfo.nftAsset,
+            mintInfo.nftAssetId
         )
 
         const trader2Receipt = swapShop.submitTrade(trader2)
@@ -282,11 +268,11 @@ Clarinet.test({
 
         // >> CHECK NFT TRANSFER BACK TO SENDER
         claim1Receipt.events.expectNonFungibleTokenTransferEvent(
-            mint1.tokenId,
+            mintInfo.nftTokenId,
             contractPrincipal(deployer),
             trader1.address,
-            mint1.nftAsset,
-            mint1.nftAssetId
+            mintInfo.nftAsset,
+            mintInfo.nftAssetId
         )
 
         const claim2Receipt = swapShop.claim(trader2)
@@ -342,18 +328,17 @@ Clarinet.test({
 
         //>>>>> MINT >>>>>>
         const minter = {chain: chain, deployer: deployer, recipient: trader1, nftAsset: defaultNftAssetContract}
-		const mint1 = Utils.mintNft(minter)
-        console.log("nft create - id: " + mint1.tokenId)
+		const mintInfo = mintTokens(chain, deployer, trader1)
 
         const trader1Receipt = swapShop.submitTrade(trader1)
         trader1Receipt.result.expectOk()
         // >> CHECK NFT TRANSFER TO CONTRACT
         trader1Receipt.events.expectNonFungibleTokenTransferEvent(
-            mint1.tokenId,
+            mintInfo.nftTokenId,
             trader1.address,
             contractPrincipal(deployer),
-            mint1.nftAsset,
-            mint1.nftAssetId
+            mintInfo.nftAsset,
+            mintInfo.nftAssetId
         )
 
         const trader2Receipt = swapShop.submitTrade(trader2)
@@ -383,11 +368,11 @@ Clarinet.test({
 
         // >> CHECK NFT TRANSFER TO TRADER 2
         confirmtrader2.events.expectNonFungibleTokenTransferEvent(
-            mint1.tokenId,
+            mintInfo.nftTokenId,
             contractPrincipal(deployer),
             trader2.address,
-            mint1.nftAsset,
-            mint1.nftAssetId
+            mintInfo.nftAsset,
+            mintInfo.nftAssetId
         )
         // >> CHECK STX TRANSFER TO TRADER 1
         confirmtrader2.events.expectSTXTransferEvent(
@@ -404,21 +389,17 @@ Clarinet.test({
         const [deployer, trader1, trader2, trader3] = ['deployer', 'wallet_1', 'wallet_2', 'wallet_3'].map(name => accounts.get(name)!)  
         
         let swapShop = new SwapShop(chain, deployer, logEvents)
-
-        //>>>>> MINT >>>>>>
-        const minter = {chain: chain, deployer: deployer, recipient: trader1, nftAsset: defaultNftAssetContract}
-		const mint1 = Utils.mintNft(minter)
-        console.log("nft create - id: " + mint1.tokenId)
+        const mintInfo = mintTokens(chain, deployer, trader1)
 
         const trader1Receipt = swapShop.submitTrade(trader1)
         trader1Receipt.result.expectOk()
         // >> CHECK NFT TRANSFER TO CONTRACT
         trader1Receipt.events.expectNonFungibleTokenTransferEvent(
-            mint1.tokenId,
+            mintInfo.nftTokenId,
             trader1.address,
             contractPrincipal(deployer),
-            mint1.nftAsset,
-            mint1.nftAssetId
+            mintInfo.nftAsset,
+            mintInfo.nftAssetId
         )
 
         const trader2Receipt = swapShop.submitTrade(trader2)
@@ -448,11 +429,11 @@ Clarinet.test({
 
         // >> CHECK NFT TRANSFER TO TRADER 2
         confirmtrader2.events.expectNonFungibleTokenTransferEvent(
-            mint1.tokenId,
+            mintInfo.nftTokenId,
             contractPrincipal(deployer),
             trader2.address,
-            mint1.nftAsset,
-            mint1.nftAssetId
+            mintInfo.nftAsset,
+            mintInfo.nftAssetId
         )
         // >> CHECK STX TRANSFER TO TRADER 1
         confirmtrader2.events.expectSTXTransferEvent(
@@ -472,21 +453,17 @@ Clarinet.test({
         const [deployer, trader1, trader2, trader3] = ['deployer', 'wallet_1', 'wallet_2', 'wallet_3'].map(name => accounts.get(name)!)  
         
         let swapShop = new SwapShop(chain, deployer, logEvents)
-
-        //>>>>> MINT >>>>>>
-        const minter = {chain: chain, deployer: deployer, recipient: trader1, nftAsset: defaultNftAssetContract}
-        const mint1 = Utils.mintNft(minter)
-        console.log("nft create - id: " + mint1.tokenId)
+        const mintInfo = mintTokens(chain, deployer, trader1)
 
         const trader1Receipt = swapShop.submitTrade(trader1)
         trader1Receipt.result.expectOk()
         // >> CHECK NFT TRANSFER TO CONTRACT
         trader1Receipt.events.expectNonFungibleTokenTransferEvent(
-            mint1.tokenId,
+            mintInfo.nftTokenId,
             trader1.address,
             contractPrincipal(deployer),
-            mint1.nftAsset,
-            mint1.nftAssetId
+            mintInfo.nftAsset,
+            mintInfo.nftAssetId
         )
 
         const trader2Receipt = swapShop.submitTrade(trader2)
@@ -521,21 +498,17 @@ Clarinet.test({
         const [deployer, trader1, trader2, trader3] = ['deployer', 'wallet_1', 'wallet_2', 'wallet_3'].map(name => accounts.get(name)!)  
         
         let swapShop = new SwapShop(chain, deployer, logEvents)
-
-        //>>>>> MINT >>>>>>
-        const minter = {chain: chain, deployer: deployer, recipient: trader1, nftAsset: defaultNftAssetContract}
-		const mint1 = Utils.mintNft(minter)
-        console.log("nft create - id: " + mint1.tokenId)
+        const mintInfo = mintTokens(chain, deployer, trader1)
 
         const trader1Receipt = swapShop.submitTrade(trader1)
         trader1Receipt.result.expectOk()
         // >> CHECK NFT TRANSFER TO CONTRACT
         trader1Receipt.events.expectNonFungibleTokenTransferEvent(
-            mint1.tokenId,
+            mintInfo.nftTokenId,
             trader1.address,
             contractPrincipal(deployer),
-            mint1.nftAsset,
-            mint1.nftAssetId
+            mintInfo.nftAsset,
+            mintInfo.nftAssetId
         )
 
         const trader2Receipt = swapShop.submitTrade(trader2)
@@ -563,11 +536,11 @@ Clarinet.test({
 
         // >> CHECK NFT TRANSFER TO TRADER 2
         confirmtrader2.events.expectNonFungibleTokenTransferEvent(
-            mint1.tokenId,
+            mintInfo.nftTokenId,
             contractPrincipal(deployer),
             trader2.address,
-            mint1.nftAsset,
-            mint1.nftAssetId
+            mintInfo.nftAsset,
+            mintInfo.nftAssetId
         )
         // >> CHECK STX TRANSFER TO TRADER 1
         confirmtrader2.events.expectSTXTransferEvent(
